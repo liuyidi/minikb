@@ -1,0 +1,81 @@
+[project]
+name = "minikb"
+version = "0.1.0"
+description = "Knowledge base platform for agents: docs, chunking, retrieval and QA."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "liuyidi", email = "yidiliu@trip.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.14",
+    "fastapi>=0.115",
+    "httpx>=0.28",
+    "minio>=7.2",
+    "pgvector>=0.3",
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "python-multipart>=0.0.20",
+    "redis>=5.2",
+    "rq>=2.0",
+    "sqlalchemy>=2.0",
+    "uvicorn[standard]>=0.32",
+]
+
+[project.scripts]
+minikb = "minikb:main"
+
+[build-system]
+requires = ["uv_build>=0.11.26,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+]
+
+# ---------- Tooling ----------
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = [".venv", "src/minikb/db/migrations"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "SIM",  # simplify
+    "TID",  # tidy imports
+]
+ignore = ["E501"]  # 行宽由 ruff format 处理
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+disallow_untyped_defs = true
+# alembic / sqlalchemy 动态特性较多，实际写业务代码时可对个别模块 override
+[[tool.mypy.overrides]]
+module = ["pgvector.*", "rq.*", "minio.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+asyncio_mode = "auto"
+

@@ -1,0 +1,35 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+env/
+venv/
+
+# Environments
+.env
+.env.local
+.env.*.local
+
+# Testing / tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Docker volumes accidentally mounted locally
+/data/
+/minikb-data/
