@@ -18,9 +18,11 @@ from minikb.api.routes import (
     data_sources_router,
     documents_router,
     eval_router,
+    import_export_router,
     ingest_router,
     kb_router,
     members_router,
+    metrics_router,
     qa_router,
     retrieval_router,
     settings_router,
@@ -114,7 +116,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Health check
+    # Health checks
     @app.get("/health")
     async def health() -> dict:
         return {
@@ -122,6 +124,59 @@ def create_app() -> FastAPI:
             "version": __version__,
             "service": "minikb",
         }
+
+    @app.get("/health/live")
+    async def health_live() -> dict:
+        """Liveness probe — always returns ok if process is running."""
+        return {"status": "ok"}
+
+    @app.get("/health/ready")
+    async def health_ready() -> dict:
+        """Readiness probe — checks dependencies."""
+        checks: dict[str, str] = {}
+        overall = "ok"
+
+        # Check Postgres
+        try:
+            from sqlalchemy import text
+            from minikb.db.base import get_engine
+            engine = get_engine()
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+            checks["postgres"] = "ok"
+        except Exception as e:
+            checks["postgres"] = f"error: {e}"
+            overall = "degraded"
+
+        # Check Redis
+        try:
+            import redis.asyncio as aioredis
+            settings = get_settings()
+            r = aioredis.from_url(settings.redis_url)
+            await r.ping()
+            await r.aclose()
+            checks["redis"] = "ok"
+        except Exception as e:
+            checks["redis"] = f"error: {e}"
+            overall = "degraded"
+
+        # Check MinIO
+        try:
+            from minikb.storage import get_minio_client
+            client = get_minio_client()
+            settings = get_settings()
+            client.bucket_exists(settings.s3_bucket)
+            checks["minio"] = "ok"
+        except Exception as e:
+            checks["minio"] = f"error: {e}"
+            overall = "degraded"
+
+        status_code = 200 if overall == "ok" else 503
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=status_code,
+            content={"status": overall, "checks": checks, "version": __version__},
+        )
 
     # Include API routes
     app.include_router(kb_router)
@@ -135,6 +190,8 @@ def create_app() -> FastAPI:
     app.include_router(members_router)
     app.include_router(eval_router)
     app.include_router(settings_router)
+    app.include_router(metrics_router)
+    app.include_router(import_export_router)
 
     # Mount static UI files
     ui_dir = Path(__file__).parent / "ui" / "static"

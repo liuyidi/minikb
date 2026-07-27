@@ -1,0 +1,91 @@
+# Default values for minikb
+replicaCount: 1
+
+image:
+  repository: minikb
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: minikb.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  web:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  worker:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+# PostgreSQL
+postgres:
+  enabled: true
+  host: ""  # Override if using external PG
+  port: 5432
+  user: minikb
+  password: minikb
+  database: minikb
+
+# Redis
+redis:
+  enabled: true
+  host: ""
+  port: 6379
+
+# MinIO / S3
+minio:
+  enabled: true
+  endpoint: ""
+  accessKey: minioadmin
+  secretKey: minioadmin
+  bucket: minikb
+  secure: false
+
+# Embedding / LLM
+embedding:
+  apiKey: ""
+  baseUrl: "https://api.openai.com/v1"
+  model: "text-embedding-3-small"
+  dim: 1536
+
+# Auth
+auth:
+  requireApiKey: false
+  defaultOrgSlug: default
+
+# Worker
+worker:
+  enabled: true
+  concurrency: 4
+
+# Monitoring
+monitoring:
+  enabled: false
+  serviceMonitor: false

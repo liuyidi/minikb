@@ -1,0 +1,134 @@
+{{- $fullName := include "minikb.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-web
+  labels:
+    app.kubernetes.io/name: {{ include "minikb.name" . }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "minikb.name" . }}
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "minikb.name" . }}
+        app.kubernetes.io/component: web
+    spec:
+      containers:
+        - name: web
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: MINIKB_ENV
+              value: "prod"
+            - name: MINIKB_HOST
+              value: "0.0.0.0"
+            - name: MINIKB_PORT
+              value: "8080"
+            - name: MINIKB_POSTGRES_DSN
+              value: "postgresql+psycopg://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host | default (printf "%s-postgres" $fullName) }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
+            - name: MINIKB_REDIS_URL
+              value: "redis://{{ .Values.redis.host | default (printf "%s-redis" $fullName) }}:{{ .Values.redis.port }}/0"
+            - name: MINIKB_S3_ENDPOINT
+              value: "{{ .Values.minio.endpoint | default (printf "%s-minio:9000" $fullName) }}"
+            - name: MINIKB_S3_ACCESS_KEY
+              value: "{{ .Values.minio.accessKey }}"
+            - name: MINIKB_S3_SECRET_KEY
+              value: "{{ .Values.minio.secretKey }}"
+            - name: MINIKB_S3_BUCKET
+              value: "{{ .Values.minio.bucket }}"
+            - name: MINIKB_S3_SECURE
+              value: "{{ .Values.minio.secure }}"
+            - name: MINIKB_OPENAI_API_KEY
+              value: "{{ .Values.embedding.apiKey }}"
+            - name: MINIKB_OPENAI_BASE_URL
+              value: "{{ .Values.embedding.baseUrl }}"
+            - name: MINIKB_EMBEDDING_MODEL
+              value: "{{ .Values.embedding.model }}"
+            - name: MINIKB_EMBEDDING_DIM
+              value: "{{ .Values.embedding.dim }}"
+            - name: MINIKB_REQUIRE_API_KEY
+              value: "{{ .Values.auth.requireApiKey }}"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.resources.web | nindent 12 }}
+---
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-worker
+  labels:
+    app.kubernetes.io/name: {{ include "minikb.name" . }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "minikb.name" . }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "minikb.name" . }}
+        app.kubernetes.io/component: worker
+    spec:
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "minikb.worker"]
+          env:
+            - name: MINIKB_ENV
+              value: "prod"
+            - name: MINIKB_POSTGRES_DSN
+              value: "postgresql+psycopg://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host | default (printf "%s-postgres" $fullName) }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
+            - name: MINIKB_REDIS_URL
+              value: "redis://{{ .Values.redis.host | default (printf "%s-redis" $fullName) }}:{{ .Values.redis.port }}/0"
+            - name: MINIKB_S3_ENDPOINT
+              value: "{{ .Values.minio.endpoint | default (printf "%s-minio:9000" $fullName) }}"
+            - name: MINIKB_S3_ACCESS_KEY
+              value: "{{ .Values.minio.accessKey }}"
+            - name: MINIKB_S3_SECRET_KEY
+              value: "{{ .Values.minio.secretKey }}"
+            - name: MINIKB_S3_BUCKET
+              value: "{{ .Values.minio.bucket }}"
+            - name: MINIKB_S3_SECURE
+              value: "{{ .Values.minio.secure }}"
+            - name: MINIKB_OPENAI_API_KEY
+              value: "{{ .Values.embedding.apiKey }}"
+            - name: MINIKB_OPENAI_BASE_URL
+              value: "{{ .Values.embedding.baseUrl }}"
+            - name: MINIKB_EMBEDDING_MODEL
+              value: "{{ .Values.embedding.model }}"
+            - name: MINIKB_EMBEDDING_DIM
+              value: "{{ .Values.embedding.dim }}"
+            - name: MINIKB_INGEST_CONCURRENCY
+              value: "{{ .Values.worker.concurrency }}"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.resources.worker | nindent 12 }}
+{{- end }}
