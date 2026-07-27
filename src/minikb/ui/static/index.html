@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>minikb - Knowledge Base Platform</title>
+    <title>minikb - 知识库平台</title>
     <style>
         * {
             margin: 0;
@@ -35,6 +35,24 @@
             opacity: 0.7;
             font-size: 14px;
         }
+        .lang-switch {
+            position: absolute;
+            right: 20px;
+            top: 22px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .lang-switch select {
+            background: rgba(255,255,255,0.12);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        header .container { position: relative; }
+
         .tabs {
             display: flex;
             gap: 10px;
@@ -291,27 +309,34 @@
     <header>
         <div class="container">
             <h1>📚 minikb</h1>
-            <p>Knowledge Base Platform for Agents</p>
+            <p data-i18n="subtitle">面向 Agent 的知识库平台</p>
+            <div class="lang-switch">
+                <label for="lang-select" style="font-size:12px;opacity:0.8;" data-i18n="lang.label">语言</label>
+                <select id="lang-select" aria-label="Language" onchange="setLocale(this.value)">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
         </div>
     </header>
 
     <div class="container">
         <div class="tabs">
-            <div class="tab active" data-panel="kb-list">Knowledge Bases</div>
-            <div class="tab" data-panel="documents">Documents</div>
-            <div class="tab" data-panel="sources">Data Sources</div>
-            <div class="tab" data-panel="chunks">Chunks</div>
-            <div class="tab" data-panel="retrieval">Retrieval</div>
-            <div class="tab" data-panel="qa">QA</div>
-            <div class="tab" data-panel="eval">Eval</div>
-            <div class="tab" data-panel="settings">Settings</div>
+            <div class="tab active" data-panel="kb-list" data-i18n="tab.kb">知识库</div>
+            <div class="tab" data-panel="documents" data-i18n="tab.documents">文档</div>
+            <div class="tab" data-panel="sources" data-i18n="tab.sources">数据源</div>
+            <div class="tab" data-panel="chunks" data-i18n="tab.chunks">分片</div>
+            <div class="tab" data-panel="retrieval" data-i18n="tab.retrieval">检索</div>
+            <div class="tab" data-panel="qa" data-i18n="tab.qa">问答</div>
+            <div class="tab" data-panel="eval" data-i18n="tab.eval">评测</div>
+            <div class="tab" data-panel="settings" data-i18n="tab.settings">设置</div>
         </div>
 
         <!-- Knowledge Bases Panel -->
         <div id="kb-list" class="panel active">
             <div class="flex flex-between flex-center mb-20">
-                <h2>Knowledge Bases</h2>
-                <button class="btn btn-primary" onclick="showCreateKbModal()">+ Create KB</button>
+                <h2 data-i18n="kb.title">知识库</h2>
+                <button class="btn btn-primary" onclick="showCreateKbModal()" data-i18n="kb.create">+ 创建知识库</button>
             </div>
             <div id="kb-items"></div>
         </div>
@@ -319,12 +344,12 @@
         <!-- Documents Panel -->
         <div id="documents" class="panel">
             <div class="flex flex-between flex-center mb-20">
-                <h2>Documents <span id="doc-kb-name" class="text-muted text-sm"></span></h2>
+                <h2><span data-i18n="doc.title">文档</span> <span id="doc-kb-name" class="text-muted text-sm"></span></h2>
                 <div class="flex flex-gap">
                     <select id="doc-kb-select" onchange="loadDocuments()">
-                        <option value="">Select KB...</option>
+                        <option value="" data-i18n="select.kb">选择知识库...</option>
                     </select>
-                    <button class="btn btn-primary" onclick="showUploadModal()">Upload</button>
+                    <button class="btn btn-primary" onclick="showUploadModal()" data-i18n="doc.upload">上传</button>
                 </div>
             </div>
             <div id="doc-items"></div>
@@ -333,12 +358,12 @@
         <!-- Data Sources Panel -->
         <div id="sources" class="panel">
             <div class="flex flex-between flex-center mb-20">
-                <h2>Data Sources</h2>
+                <h2 data-i18n="src.title">数据源</h2>
                 <div class="flex flex-gap">
                     <select id="source-kb-select" onchange="loadDataSources()" style="width: 200px;">
-                        <option value="">Select KB...</option>
+                        <option value="" data-i18n="select.kb">选择知识库...</option>
                     </select>
-                    <button class="btn btn-primary" onclick="showAddSourceModal()">+ Add Source</button>
+                    <button class="btn btn-primary" onclick="showAddSourceModal()" data-i18n="src.add">+ 添加数据源</button>
                 </div>
             </div>
             <div id="source-items"></div>
@@ -347,15 +372,15 @@
         <!-- Chunks Panel -->
         <div id="chunks" class="panel">
             <div class="flex flex-between flex-center mb-20">
-                <h2>Chunks <span id="chunk-kb-name" class="text-muted text-sm"></span></h2>
+                <h2><span data-i18n="chunk.title">分片</span> <span id="chunk-kb-name" class="text-muted text-sm"></span></h2>
                 <div class="flex flex-gap">
                     <select id="chunk-kb-select" onchange="loadChunks()">
-                        <option value="">Select KB...</option>
+                        <option value="" data-i18n="select.kb">选择知识库...</option>
                     </select>
                     <select id="chunk-doc-select" onchange="loadChunks()">
                         <option value="">All documents</option>
                     </select>
-                    <input type="text" id="chunk-search" placeholder="Search chunks..." style="width: 200px;" onkeyup="debounce(loadChunks, 300)()">
+                    <input type="text" id="chunk-search" placeholder="搜索分片..." data-i18n-placeholder="chunk.search" style="width: 200px;" onkeyup="debounce(loadChunks, 300)()">
                 </div>
             </div>
             <div id="chunk-stats" class="mb-20"></div>
@@ -365,10 +390,10 @@
 
         <!-- Retrieval Panel -->
         <div id="retrieval" class="panel">
-            <h2 class="mb-20">Retrieval Playground</h2>
+            <h2 class="mb-20" data-i18n="ret.title">检索试验台</h2>
             <div class="flex flex-gap mb-20">
                 <select id="retrieval-kb-select" style="flex: 1;">
-                    <option value="">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
                 <select id="retrieval-mode" style="width: 120px;">
                     <option value="vector">Vector</option>
@@ -391,16 +416,16 @@
             <div class="form-group">
                 <textarea id="retrieval-query" rows="3" placeholder="Enter your search query..."></textarea>
             </div>
-            <button class="btn btn-primary" onclick="doRetrieval()">Search</button>
+            <button class="btn btn-primary" onclick="doRetrieval()" data-i18n="ret.search">搜索</button>
             <div id="retrieval-results" class="search-results"></div>
         </div>
 
         <!-- Settings Panel -->
         <div id="settings" class="panel">
-            <h2 class="mb-20">KB Settings</h2>
+            <h2 class="mb-20" data-i18n="set.title">知识库设置</h2>
             <div class="flex flex-gap mb-20">
                 <select id="settings-kb-select" onchange="loadSettings()" style="width: 250px;">
-                    <option value="">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
             </div>
             <div id="settings-content"></div>
@@ -409,12 +434,12 @@
         <!-- Eval Panel -->
         <div id="eval" class="panel">
             <div class="flex flex-between flex-center mb-20">
-                <h2>Evaluation</h2>
+                <h2 data-i18n="eval.title">评测</h2>
                 <div class="flex flex-gap">
                     <select id="eval-kb-select" onchange="loadEvalDatasets()" style="width: 200px;">
-                        <option value="">Select KB...</option>
+                        <option value="" data-i18n="select.kb">选择知识库...</option>
                     </select>
-                    <button class="btn btn-primary" onclick="showCreateDatasetModal()">+ Dataset</button>
+                    <button class="btn btn-primary" onclick="showCreateDatasetModal()" data-i18n="eval.dataset">+ 数据集</button>
                 </div>
             </div>
             <div id="eval-datasets"></div>
@@ -423,10 +448,10 @@
 
         <!-- QA Panel -->
         <div id="qa" class="panel">
-            <h2 class="mb-20">QA Playground</h2>
+            <h2 class="mb-20" data-i18n="qa.title">问答试验台</h2>
             <div class="flex flex-gap mb-20">
                 <select id="qa-kb-select" style="flex: 1;">
-                    <option value="">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
                 <select id="qa-mode" style="width: 120px;">
                     <option value="vector">Vector</option>
@@ -436,11 +461,11 @@
                 <input type="number" id="qa-top-k" value="6" min="1" max="20" style="width: 80px;" title="Top K">
             </div>
             <div class="form-group">
-                <textarea id="qa-query" rows="3" placeholder="Ask a question about your knowledge base..."></textarea>
+                <textarea id="qa-query" rows="3" placeholder="就知识库内容提问..." data-i18n-placeholder="qa.placeholder"></textarea>
             </div>
             <div class="flex flex-gap mb-20">
-                <button class="btn btn-primary" onclick="doQA()">Ask</button>
-                <button class="btn btn-secondary" onclick="clearQA()">Clear</button>
+                <button class="btn btn-primary" onclick="doQA()" data-i18n="qa.ask">提问</button>
+                <button class="btn btn-secondary" onclick="clearQA()" data-i18n="qa.clear">清空</button>
             </div>
             <div id="qa-results"></div>
         </div>
@@ -534,7 +559,105 @@
         </div>
     </div>
 
+    
     <script>
+    const LOCALE_KEY = 'minikb.locale';
+    const I18N = {
+      'zh-CN': {
+        'subtitle': '面向 Agent 的知识库平台',
+        'lang.label': '语言',
+        'tab.kb': '知识库',
+        'tab.documents': '文档',
+        'tab.sources': '数据源',
+        'tab.chunks': '分片',
+        'tab.retrieval': '检索',
+        'tab.qa': '问答',
+        'tab.eval': '评测',
+        'tab.settings': '设置',
+        'kb.title': '知识库',
+        'kb.create': '+ 创建知识库',
+        'doc.title': '文档',
+        'doc.upload': '上传',
+        'src.title': '数据源',
+        'src.add': '+ 添加数据源',
+        'chunk.title': '分片',
+        'chunk.search': '搜索分片...',
+        'ret.title': '检索试验台',
+        'ret.search': '搜索',
+        'set.title': '知识库设置',
+        'eval.title': '评测',
+        'eval.dataset': '+ 数据集',
+        'qa.title': '问答试验台',
+        'qa.placeholder': '就知识库内容提问...',
+        'qa.ask': '提问',
+        'qa.clear': '清空',
+        'select.kb': '选择知识库...',
+        'err.selectKb': '请先选择知识库',
+        'err.query': '请输入查询内容',
+        'err.nameSlug': '名称和 slug 必填',
+      },
+      en: {
+        'subtitle': 'Knowledge Base Platform for Agents',
+        'lang.label': 'Language',
+        'tab.kb': 'Knowledge Bases',
+        'tab.documents': 'Documents',
+        'tab.sources': 'Data Sources',
+        'tab.chunks': 'Chunks',
+        'tab.retrieval': 'Retrieval',
+        'tab.qa': 'QA',
+        'tab.eval': 'Eval',
+        'tab.settings': 'Settings',
+        'kb.title': 'Knowledge Bases',
+        'kb.create': '+ Create KB',
+        'doc.title': 'Documents',
+        'doc.upload': 'Upload',
+        'src.title': 'Data Sources',
+        'src.add': '+ Add Source',
+        'chunk.title': 'Chunks',
+        'chunk.search': 'Search chunks...',
+        'ret.title': 'Retrieval Playground',
+        'ret.search': 'Search',
+        'set.title': 'KB Settings',
+        'eval.title': 'Evaluation',
+        'eval.dataset': '+ Dataset',
+        'qa.title': 'QA Playground',
+        'qa.placeholder': 'Ask a question about your knowledge base...',
+        'qa.ask': 'Ask',
+        'qa.clear': 'Clear',
+        'select.kb': 'Select KB...',
+        'err.selectKb': 'Please select a KB first',
+        'err.query': 'Please enter a query',
+        'err.nameSlug': 'Name and slug are required',
+      }
+    };
+    let currentLocale = localStorage.getItem(LOCALE_KEY) || 'zh-CN';
+    if (currentLocale !== 'zh-CN' && currentLocale !== 'en') currentLocale = 'zh-CN';
+    function t(key) {
+      return (I18N[currentLocale] && I18N[currentLocale][key]) || (I18N.en && I18N.en[key]) || key;
+    }
+    function applyI18n() {
+      document.documentElement.lang = currentLocale;
+      document.title = currentLocale === 'zh-CN' ? 'minikb - 知识库平台' : 'minikb - Knowledge Base Platform';
+      const sel = document.getElementById('lang-select');
+      if (sel) sel.value = currentLocale;
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const key = el.getAttribute('data-i18n');
+        if (key) el.textContent = t(key);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (key) el.setAttribute('placeholder', t(key));
+      });
+    }
+    function setLocale(locale) {
+      currentLocale = locale;
+      localStorage.setItem(LOCALE_KEY, locale);
+      applyI18n();
+    }
+    document.addEventListener('DOMContentLoaded', applyI18n);
+    </script>
+
+<script>
         const API_BASE = '/v1';
         let currentKbId = null;
 
@@ -602,19 +725,19 @@
             ).join('');
 
             document.getElementById('doc-kb-select').innerHTML =
-                '<option value="">Select KB...</option>' + options;
+                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
             document.getElementById('chunk-kb-select').innerHTML =
-                '<option value="">Select KB...</option>' + options;
+                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
             document.getElementById('retrieval-kb-select').innerHTML =
-                '<option value="">Select KB...</option>' + options;
+                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
             document.getElementById('qa-kb-select').innerHTML =
-                '<option value="">Select KB...</option>' + options;
+                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
             document.getElementById('source-kb-select').innerHTML =
-                '<option value="">Select KB...</option>' + options;
+                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
             document.getElementById('eval-kb-select').innerHTML =
-                '<option value="">Select KB...</option>' + options;
+                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
             document.getElementById('settings-kb-select').innerHTML =
-                '<option value="">Select KB...</option>' + options;
+                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
         }
 
         function showCreateKbModal() {
@@ -631,7 +754,7 @@
             const description = document.getElementById('kb-description').value;
 
             if (!name || !slug) {
-                alert('Name and slug are required');
+                alert(t('err.nameSlug'));
                 return;
             }
 
@@ -730,7 +853,7 @@
 
         function showUploadModal() {
             if (!currentKbId && !document.getElementById('doc-kb-select').value) {
-                alert('Please select a KB first');
+                alert(t('err.selectKb'));
                 return;
             }
             currentKbId = document.getElementById('doc-kb-select').value;
@@ -803,11 +926,11 @@
             const container = document.getElementById('retrieval-results');
 
             if (!kbId) {
-                alert('Please select a KB');
+                alert(t('err.selectKb'));
                 return;
             }
             if (!query) {
-                alert('Please enter a query');
+                alert(t('err.query'));
                 return;
             }
 
@@ -1056,7 +1179,7 @@
             const name = prompt('Dataset name:');
             if (!name) return;
             const kbId = document.getElementById('eval-kb-select').value;
-            if (!kbId) { alert('Select a KB first'); return; }
+            if (!kbId) { alert(t('err.selectKb')); return; }
 
             fetch(`${API_BASE}/kb/${kbId}/eval/datasets`, {
                 method: 'POST',
@@ -1111,7 +1234,7 @@
                 const resp = await fetch(`${API_BASE}/kb`);
                 const data = await resp.json();
                 const options = data.items.map(kb => `<option value="${kb.id}">${kb.name}</option>`).join('');
-                document.getElementById('source-kb-select').innerHTML = '<option value="">Select KB...</option>' + options;
+                document.getElementById('source-kb-select').innerHTML = '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
             }
 
             try {
@@ -1156,7 +1279,7 @@
 
         function showAddSourceModal() {
             const kbId = document.getElementById('source-kb-select').value;
-            if (!kbId) { alert('Please select a KB first'); return; }
+            if (!kbId) { alert(t('err.selectKb')); return; }
             document.getElementById('add-source-modal').classList.add('active');
             updateSourceForm();
         }
@@ -1406,7 +1529,7 @@
             const query = document.getElementById('qa-query').value;
             const container = document.getElementById('qa-results');
 
-            if (!kbId) { alert('Please select a KB'); return; }
+            if (!kbId) { alert(t('err.selectKb')); return; }
             if (!query) { alert('Please enter a question'); return; }
 
             container.innerHTML = '<div class="card"><p class="text-muted">Thinking...</p></div>';
