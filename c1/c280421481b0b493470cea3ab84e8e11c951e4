@@ -1,0 +1,124 @@
+src/minikb/embedding/provider.py
+  s_f8d511753c7c54::t_0d5765b012f9c0 1-152
+scripts/smoke_test.py
+  s_f8d511753c7c54::t_bf878634115680 1-152
+src/minikb/api/routes/api_keys.py
+  s_f8d511753c7c54::t_ca491575437c6c 1-132
+src/minikb/db/migrations/script.py.mako
+  s_f8d511753c7c54::t_08a90cfc872e4a 1-29
+README.md
+  s_f8d511753c7c54::t_7c270c7528ed16 34-81,97-111,121-126,128,130-146,153-158
+docker/docker-compose.yml
+  s_f8d511753c7c54::t_d868915d8c4b8a 33,41-42,52
+  ai_agent 3,21
+src/minikb/api/__init__.py
+  s_f8d511753c7c54::t_178ef43dce7144 1
+src/minikb/api/deps.py
+  s_f8d511753c7c54::t_b2316315e4bf20 11-12
+  s_2bc94f320af26f::t_97f927942a7a52 21-28
+  s_f8d511753c7c54::t_20edd97f2907de 1-10,13-20,29-102
+src/minikb/ingest/workers.py
+  s_f8d511753c7c54::t_92b304187c4896 1-288
+src/minikb/api/routes/retrieval.py
+  s_f8d511753c7c54::t_cd9301e19dabf5 1-43
+src/minikb/retrieval/__init__.py
+  s_f8d511753c7c54::t_dcaecd3fa166e8 1-16
+src/minikb/db/__init__.py
+  s_2bc94f320af26f::t_01742c8e40de89 37
+  s_f8d511753c7c54::t_dcf88597817d74 15,17-18,53-55
+  s_2bc94f320af26f::t_471ab87a050c74 2-10
+  s_f8d511753c7c54::t_35a50060f60123 1,11-14,16,19-36,38-52,56
+src/minikb/ingest/parsers.py
+  s_f8d511753c7c54::t_01265314d00fdb 1-169
+src/minikb/ui/static/index.html
+  s_f8d511753c7c54::t_190f8a1fba8539 1-674
+src/minikb/api/routes/__init__.py
+  s_f8d511753c7c54::t_7bf73d16adf283 3
+  s_f8d511753c7c54::t_bed1473fb44df3 1-2,5,7
+  s_f8d511753c7c54::t_19bb227d295913 6
+  s_f8d511753c7c54::t_8ef2a9bdad91da 4,8
+src/minikb/db/models.py
+  s_f8d511753c7c54::t_ddc7f3ef4779c4 243-245
+  s_f8d511753c7c54::t_52bd9025fd09c2 24-25
+  s_f8d511753c7c54::t_fc0c617885283d 1-23,26-241,246-283
+  s_f8d511753c7c54::t_5ae6f401e3cf1a 242
+src/minikb/main.py
+  s_2bc94f320af26f::t_d78c10567cebdc 17
+  s_f8d511753c7c54::t_e5f176f37d38ee 119
+  s_f8d511753c7c54::t_fe04fbac28bb98 117
+  s_f8d511753c7c54::t_968223548ffea8 118
+  s_f8d511753c7c54::t_a47751367b1da8 6,11
+  s_f8d511753c7c54::t_ed45cf926e1c0c 4,10,12,22-24,26-58,73-82,84,96-105,114-116
+  s_f8d511753c7c54::t_fc45a57eebd53d 121-130
+  s_2bc94f320af26f::t_ba9af19edcfe8e 25
+  s_f8d511753c7c54::t_1c7d32a7d20aee 15
+src/minikb/ingest/__init__.py
+  s_f8d511753c7c54::t_45b409b47bf739 1-32
+pyproject.toml
+  ai_agent 14
+tests/test_knowledge_bases.py
+  s_f8d511753c7c54::t_6a260820ab9f22 1-117
+alembic.ini
+  s_f8d511753c7c54::t_36793327941d5d 1-37
+src/minikb/api/schemas.py
+  s_f8d511753c7c54::t_9ad863968fbdbc 1-179
+src/minikb/db/base.py
+  s_2bc94f320af26f::t_2c8e417c5af9cd 47,56-62
+  s_2bc94f320af26f::t_f1fe5a07ddf3d5 67-68,71
+  s_f8d511753c7c54::t_b3b2e7e60b79fe 1-46,48-55,63-66,69-70,72-81
+src/minikb/storage.py
+  s_f8d511753c7c54::t_8ca01711cb1c26 1-112
+src/minikb/db/migrations/env.py
+  s_f8d511753c7c54::t_fc4792df258fb2 1-80
+src/minikb/api/routes/documents.py
+  s_f8d511753c7c54::t_0c87702d625331 1-227
+src/minikb/db/migrations/versions/001_initial.py
+  s_f8d511753c7c54::t_641475cb5ef1aa 1-171
+src/minikb/auth/api_key.py
+  s_f8d511753c7c54::t_c5d55eedb385e1 1-135
+src/minikb/embedding/__init__.py
+  s_f8d511753c7c54::t_7e82dddd1a5a81 1-22
+src/minikb/api/routes/ingest.py
+  s_f8d511753c7c54::t_e85ef7c9b5766a 1-187
+src/minikb/ingest/chunkers.py
+  s_f8d511753c7c54::t_b7bae351d7bdd8 1-254
+src/minikb/api/routes/knowledge_bases.py
+  s_f8d511753c7c54::t_39d8698f97600c 1-143
+src/minikb/cli.py
+  s_f8d511753c7c54::t_1a5e5c77cbd0f6 1-196
+src/minikb/auth/__init__.py
+  s_f8d511753c7c54::t_742c6d2cd73cc2 1-22
+uv.lock
+  ai_agent 278,280,288,290,298,300,307,309,317,319,530,556
+src/minikb/retrieval/search.py
+  s_f8d511753c7c54::t_a9910d0396631d 1-226
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "c1c280421481b0b493470cea3ab84e8e11c951e4",
+  "prompts": {},
+  "humans": {
+    "h_3794f8a2c4d6c5": {
+      "author": "liuyidi1993@gmail.com <yidiliu@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_2bc94f320af26f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0562f3f6-5f30-41eb-a942-3758655c64bd",
+        "model": "default"
+      },
+      "human_author": "liuyidi1993@gmail.com <yidiliu@trip.com>"
+    },
+    "s_f8d511753c7c54": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2352aea-668d-444b-9137-37535c5a7058",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "liuyidi1993@gmail.com <yidiliu@trip.com>"
+    }
+  }
+}
