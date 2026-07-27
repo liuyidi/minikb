@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: docker.m.daocloud.io/pgvector/pgvector:pg16
     container_name: minikb-postgres
     restart: unless-stopped
     environment:
@@ -18,7 +18,7 @@ services:
       retries: 20
 
   redis:
-    image: redis:7-alpine
+    image: docker.m.daocloud.io/library/redis:7-alpine
     container_name: minikb-redis
     restart: unless-stopped
     ports:
@@ -30,7 +30,7 @@ services:
       retries: 20
 
   minio:
-    image: minio/minio:latest
+    image: docker.m.daocloud.io/minio/minio:latest
     container_name: minikb-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -38,8 +38,8 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9000:9000"    # S3 API
-      - "9001:9001"    # Web console
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minikb_miniodata:/data
     healthcheck:
@@ -49,8 +49,7 @@ services:
       retries: 20
 
   minio-bootstrap:
-    # 首次启动创建默认 bucket，跑完自动退出
-    image: minio/mc:latest
+    image: docker.m.daocloud.io/minio/mc:latest
     depends_on:
       minio:
         condition: service_healthy
