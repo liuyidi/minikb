@@ -109,8 +109,47 @@ def upgrade() -> None:
     op.create_index("ix_audit_events_created_at", "audit_events", ["created_at"])
     op.create_index("ix_audit_events_action", "audit_events", ["action"])
 
+    # Evaluation tables
+    op.create_table(
+        "eval_datasets",
+        sa.Column("id", UUID(as_uuid=True), primary_key=True),
+        sa.Column("kb_id", UUID(as_uuid=True), sa.ForeignKey("knowledge_bases.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("name", sa.String(200), nullable=False),
+        sa.Column("description", sa.Text),
+        sa.Column("size", sa.Integer, nullable=False, server_default="0"),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+    )
+    op.create_index("ix_eval_datasets_kb_id", "eval_datasets", ["kb_id"])
+
+    op.create_table(
+        "eval_items",
+        sa.Column("id", UUID(as_uuid=True), primary_key=True),
+        sa.Column("dataset_id", UUID(as_uuid=True), sa.ForeignKey("eval_datasets.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("query", sa.Text, nullable=False),
+        sa.Column("expected_answer", sa.Text),
+        sa.Column("expected_chunk_ids", JSONB, nullable=False, server_default="[]"),
+        sa.Column("meta", JSONB, nullable=False, server_default="{}"),
+    )
+    op.create_index("ix_eval_items_dataset_id", "eval_items", ["dataset_id"])
+
+    op.create_table(
+        "eval_runs",
+        sa.Column("id", UUID(as_uuid=True), primary_key=True),
+        sa.Column("dataset_id", UUID(as_uuid=True), sa.ForeignKey("eval_datasets.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("kb_id", UUID(as_uuid=True), sa.ForeignKey("knowledge_bases.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("params", JSONB, nullable=False, server_default="{}"),
+        sa.Column("metrics", JSONB, nullable=False, server_default="{}"),
+        sa.Column("item_results", JSONB, nullable=False, server_default="[]"),
+        sa.Column("status", sa.String(20), nullable=False, server_default="completed"),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+    )
+    op.create_index("ix_eval_runs_dataset_id", "eval_runs", ["dataset_id"])
+
 
 def downgrade() -> None:
+    op.drop_table("eval_runs")
+    op.drop_table("eval_items")
+    op.drop_table("eval_datasets")
     op.drop_table("audit_events")
     op.drop_table("data_sources")
     op.drop_table("qa_logs")

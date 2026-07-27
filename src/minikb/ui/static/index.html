@@ -303,6 +303,7 @@
             <div class="tab" data-panel="chunks">Chunks</div>
             <div class="tab" data-panel="retrieval">Retrieval</div>
             <div class="tab" data-panel="qa">QA</div>
+            <div class="tab" data-panel="eval">Eval</div>
         </div>
 
         <!-- Knowledge Bases Panel -->
@@ -391,6 +392,21 @@
             </div>
             <button class="btn btn-primary" onclick="doRetrieval()">Search</button>
             <div id="retrieval-results" class="search-results"></div>
+        </div>
+
+        <!-- Eval Panel -->
+        <div id="eval" class="panel">
+            <div class="flex flex-between flex-center mb-20">
+                <h2>Evaluation</h2>
+                <div class="flex flex-gap">
+                    <select id="eval-kb-select" onchange="loadEvalDatasets()" style="width: 200px;">
+                        <option value="">Select KB...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showCreateDatasetModal()">+ Dataset</button>
+                </div>
+            </div>
+            <div id="eval-datasets"></div>
+            <div id="eval-runs" class="mt-20"></div>
         </div>
 
         <!-- QA Panel -->
@@ -523,6 +539,7 @@
                 if (tab.dataset.panel === 'chunks') { loadKbOptions(); }
                 if (tab.dataset.panel === 'retrieval') loadKbOptions();
                 if (tab.dataset.panel === 'qa') loadKbOptions();
+                if (tab.dataset.panel === 'eval') loadKbOptions();
             });
         });
 
@@ -580,6 +597,8 @@
             document.getElementById('qa-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
             document.getElementById('source-kb-select').innerHTML =
+                '<option value="">Select KB...</option>' + options;
+            document.getElementById('eval-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
         }
 
@@ -828,6 +847,116 @@
             document.getElementById('rerank-provider').style.display = enabled ? '' : 'none';
             document.getElementById('rerank-top-n').style.display = enabled ? '' : 'none';
             document.getElementById('rerank-topn-label').style.display = enabled ? '' : 'none';
+        }
+
+        // ─── Eval Panel ─────────────────────────────────────────────────────
+
+        let currentDatasetId = null;
+
+        async function loadEvalDatasets() {
+            const kbId = document.getElementById('eval-kb-select').value;
+            const container = document.getElementById('eval-datasets');
+
+            if (!kbId) { container.innerHTML = '<div class="empty-state">Select a KB</div>'; return; }
+
+            try {
+                const [dsResp, runsResp] = await Promise.all([
+                    fetch(`${API_BASE}/kb/${kbId}/eval/datasets`),
+                    fetch(`${API_BASE}/kb/${kbId}/eval/runs`),
+                ]);
+                const datasets = await dsResp.json();
+                const runs = await runsResp.json();
+
+                let html = '';
+                if (datasets.length === 0) {
+                    html = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>No evaluation datasets yet.</p></div>';
+                } else {
+                    html = '<h3 class="mb-10">Datasets</h3>' + datasets.map(ds => `
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">${escapeHtml(ds.name)}</span>
+                                <span class="badge badge-info">${ds.size} items</span>
+                            </div>
+                            <div class="card-meta">Created: ${new Date(ds.created_at).toLocaleString()}</div>
+                            <div class="mt-10">
+                                <button class="btn btn-secondary text-sm" onclick="runEval('${kbId}', '${ds.id}')">Run Eval</button>
+                                <button class="btn btn-danger text-sm" onclick="deleteDataset('${kbId}', '${ds.id}')">Delete</button>
+                            </div>
+                        </div>`).join('');
+                }
+                container.innerHTML = html;
+
+                // Render runs
+                const runsContainer = document.getElementById('eval-runs');
+                if (runs.length === 0) {
+                    runsContainer.innerHTML = '';
+                } else {
+                    runsContainer.innerHTML = '<h3 class="mb-10">Recent Runs</h3>' + runs.map(run => {
+                        const m = run.metrics || {};
+                        return `<div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Run ${run.id.substring(0, 8)}</span>
+                                <span class="badge ${run.status === 'completed' ? 'badge-success' : 'badge-warning'}">${run.status}</span>
+                            </div>
+                            <div class="card-meta">
+                                Mode: ${run.params?.mode || '?'} · Top-K: ${run.params?.top_k || '?'} ·
+                                ${new Date(run.created_at).toLocaleString()}
+                            </div>
+                            <div class="flex flex-gap mt-10" style="flex-wrap: wrap;">
+                                ${m['recall@5'] !== undefined ? `<span class="badge badge-info">R@5: ${(m['recall@5']*100).toFixed(1)}%</span>` : ''}
+                                ${m['mrr'] !== undefined ? `<span class="badge badge-info">MRR: ${m['mrr'].toFixed(3)}</span>` : ''}
+                                ${m['ndcg@5'] !== undefined ? `<span class="badge badge-info">nDCG@5: ${m['ndcg@5'].toFixed(3)}</span>` : ''}
+                                ${m['avg_latency_ms'] !== undefined ? `<span class="badge badge-info">Latency: ${m['avg_latency_ms']}ms</span>` : ''}
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
+            } catch (e) {
+                container.innerHTML = `<p style="color: #dc3545;">Error: ${e.message}</p>`;
+            }
+        }
+
+        function showCreateDatasetModal() {
+            const name = prompt('Dataset name:');
+            if (!name) return;
+            const kbId = document.getElementById('eval-kb-select').value;
+            if (!kbId) { alert('Select a KB first'); return; }
+
+            fetch(`${API_BASE}/kb/${kbId}/eval/datasets`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name }),
+            }).then(resp => {
+                if (resp.ok) loadEvalDatasets();
+                else alert('Failed to create dataset');
+            });
+        }
+
+        async function runEval(kbId, datasetId) {
+            if (!confirm('Run evaluation? This may take a while.')) return;
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/eval/runs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dataset_id: datasetId, mode: 'vector', top_k: 10 }),
+                });
+                if (resp.ok) {
+                    alert('Evaluation complete!');
+                    loadEvalDatasets();
+                } else {
+                    const err = await resp.json();
+                    alert(err.detail || 'Evaluation failed');
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function deleteDataset(kbId, dsId) {
+            if (!confirm('Delete this dataset?')) return;
+            await fetch(`${API_BASE}/kb/${kbId}/eval/datasets/${dsId}`, { method: 'DELETE' });
+            loadEvalDatasets();
         }
 
         // ─── Data Sources Panel ──────────────────────────────────────────────
