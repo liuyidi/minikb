@@ -92,6 +92,7 @@
             cursor: pointer;
             font-size: 14px;
             transition: all 0.2s;
+            white-space: nowrap;
         }
         .btn-primary {
             background: #1a1a2e;
@@ -281,6 +282,15 @@
         .flex-center {
             align-items: center;
         }
+        .control-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 42px;
+        }
+        .control-bar select {
+            height: 42px;
+        }
         .mt-10 { margin-top: 10px; }
         .mt-20 { margin-top: 20px; }
         .mb-10 { margin-bottom: 10px; }
@@ -311,7 +321,6 @@
             <h1>📚 minikb</h1>
             <p data-i18n="subtitle">面向 Agent 的知识库平台</p>
             <div class="lang-switch">
-                <label for="lang-select" style="font-size:12px;opacity:0.8;" data-i18n="lang.label">语言</label>
                 <select id="lang-select" aria-label="Language" onchange="setLocale(this.value)">
                     <option value="zh-CN">简体中文</option>
                     <option value="en">English</option>
@@ -345,7 +354,7 @@
         <div id="documents" class="panel">
             <div class="flex flex-between flex-center mb-20">
                 <h2><span data-i18n="doc.title">文档</span> <span id="doc-kb-name" class="text-muted text-sm"></span></h2>
-                <div class="flex flex-gap">
+                <div class="control-bar">
                     <select id="doc-kb-select" onchange="loadDocuments()">
                         <option value="" data-i18n="select.kb">选择知识库...</option>
                     </select>
@@ -359,7 +368,7 @@
         <div id="sources" class="panel">
             <div class="flex flex-between flex-center mb-20">
                 <h2 data-i18n="src.title">数据源</h2>
-                <div class="flex flex-gap">
+                <div class="control-bar">
                     <select id="source-kb-select" onchange="loadDataSources()" style="width: 200px;">
                         <option value="" data-i18n="select.kb">选择知识库...</option>
                     </select>
@@ -373,7 +382,7 @@
         <div id="chunks" class="panel">
             <div class="flex flex-between flex-center mb-20">
                 <h2><span data-i18n="chunk.title">分片</span> <span id="chunk-kb-name" class="text-muted text-sm"></span></h2>
-                <div class="flex flex-gap">
+                <div class="control-bar">
                     <select id="chunk-kb-select" onchange="loadChunks()">
                         <option value="" data-i18n="select.kb">选择知识库...</option>
                     </select>
@@ -391,7 +400,7 @@
         <!-- Retrieval Panel -->
         <div id="retrieval" class="panel">
             <h2 class="mb-20" data-i18n="ret.title">检索试验台</h2>
-            <div class="flex flex-gap mb-20">
+            <div class="control-bar mb-20">
                 <select id="retrieval-kb-select" style="flex: 1;">
                     <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
@@ -423,7 +432,7 @@
         <!-- Settings Panel -->
         <div id="settings" class="panel">
             <h2 class="mb-20" data-i18n="set.title">知识库设置</h2>
-            <div class="flex flex-gap mb-20">
+            <div class="control-bar mb-20">
                 <select id="settings-kb-select" onchange="loadSettings()" style="width: 250px;">
                     <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
@@ -435,7 +444,7 @@
         <div id="eval" class="panel">
             <div class="flex flex-between flex-center mb-20">
                 <h2 data-i18n="eval.title">评测</h2>
-                <div class="flex flex-gap">
+                <div class="control-bar">
                     <select id="eval-kb-select" onchange="loadEvalDatasets()" style="width: 200px;">
                         <option value="" data-i18n="select.kb">选择知识库...</option>
                     </select>
@@ -449,7 +458,7 @@
         <!-- QA Panel -->
         <div id="qa" class="panel">
             <h2 class="mb-20" data-i18n="qa.title">问答试验台</h2>
-            <div class="flex flex-gap mb-20">
+            <div class="control-bar mb-20">
                 <select id="qa-kb-select" style="flex: 1;">
                     <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
@@ -661,7 +670,7 @@
         const API_BASE = '/v1';
         let currentKbId = null;
 
-        // Tab switching - updated to include chunks and QA
+        // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -669,14 +678,23 @@
                 tab.classList.add('active');
                 document.getElementById(tab.dataset.panel).classList.add('active');
 
-                if (tab.dataset.panel === 'documents') loadKbOptions();
+                if (tab.dataset.panel === 'documents') { loadKbOptions(); }
                 if (tab.dataset.panel === 'sources') { loadKbOptions(); }
                 if (tab.dataset.panel === 'chunks') { loadKbOptions(); }
-                if (tab.dataset.panel === 'retrieval') loadKbOptions();
-                if (tab.dataset.panel === 'qa') loadKbOptions();
-                if (tab.dataset.panel === 'eval') loadKbOptions();
-                if (tab.dataset.panel === 'settings') loadKbOptions();
+                if (tab.dataset.panel === 'retrieval') { loadKbOptions(); }
+                if (tab.dataset.panel === 'qa') { loadKbOptions(); }
+                if (tab.dataset.panel === 'eval') { loadKbOptions(); }
+                if (tab.dataset.panel === 'settings') { loadKbOptions(); }
             });
+        });
+
+        // Sync KB selection across tabs
+        document.addEventListener('change', (e) => {
+            if (e.target.tagName === 'SELECT' && e.target.id.endsWith('-kb-select')) {
+                if (e.target.value) {
+                    _selectedKbId = e.target.value;
+                }
+            }
         });
 
         // Load KBs on page load
@@ -717,27 +735,39 @@
             `).join('');
         }
 
-        async function loadKbOptions() {
+        let _selectedKbId = null;
+
+        async function loadKbOptions(autoSelect = true) {
             const resp = await fetch(`${API_BASE}/kb`);
             const data = await resp.json();
-            const options = data.items.map(kb =>
-                `<option value="${kb.id}">${kb.name}</option>`
+            const items = data.items || [];
+            const options = items.map(kb =>
+                `<option value="${kb.id}"${_selectedKbId === kb.id ? ' selected' : ''}>${kb.name}</option>`
             ).join('');
 
-            document.getElementById('doc-kb-select').innerHTML =
-                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
-            document.getElementById('chunk-kb-select').innerHTML =
-                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
-            document.getElementById('retrieval-kb-select').innerHTML =
-                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
-            document.getElementById('qa-kb-select').innerHTML =
-                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
-            document.getElementById('source-kb-select').innerHTML =
-                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
-            document.getElementById('eval-kb-select').innerHTML =
-                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
-            document.getElementById('settings-kb-select').innerHTML =
-                '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
+            const selects = ['doc-kb-select', 'chunk-kb-select', 'retrieval-kb-select',
+                             'qa-kb-select', 'source-kb-select', 'eval-kb-select', 'settings-kb-select'];
+
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const oldVal = el.value;
+                    el.innerHTML = '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
+                    if (oldVal && items.some(kb => kb.id === oldVal)) {
+                        el.value = oldVal;
+                    } else if (autoSelect && items.length === 1) {
+                        el.value = items[0].id;
+                        _selectedKbId = items[0].id;
+                    } else if (_selectedKbId && items.some(kb => kb.id === _selectedKbId)) {
+                        el.value = _selectedKbId;
+                    }
+                }
+            });
+
+            // If only one KB, persist the selection
+            if (items.length === 1) {
+                _selectedKbId = items[0].id;
+            }
         }
 
         function showCreateKbModal() {
