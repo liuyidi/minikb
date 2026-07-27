@@ -9,6 +9,7 @@ from minikb.auth.api_key import (
     require_scope,
     verify_secret,
 )
+from minikb.auth.audit import AuditEvent, get_audit_logs, log_audit
 
 __all__ = [
     "generate_api_key",
@@ -19,4 +20,7 @@ __all__ = [
     "create_dev_api_key",
     "check_scope",
     "require_scope",
+    "AuditEvent",
+    "log_audit",
+    "get_audit_logs",
 ]

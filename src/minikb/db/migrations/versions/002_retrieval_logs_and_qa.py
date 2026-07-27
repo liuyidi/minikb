@@ -91,8 +91,27 @@ def upgrade() -> None:
     )
     op.create_index("ix_data_sources_kb_id", "data_sources", ["kb_id"])
 
+    # Audit events (append-only)
+    op.create_table(
+        "audit_events",
+        sa.Column("id", UUID(as_uuid=True), primary_key=True),
+        sa.Column("org_id", UUID(as_uuid=True), sa.ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("actor_id", UUID(as_uuid=True)),
+        sa.Column("actor_type", sa.String(20), nullable=False, server_default="user"),
+        sa.Column("action", sa.String(100), nullable=False),
+        sa.Column("resource_type", sa.String(50), nullable=False),
+        sa.Column("resource_id", sa.String(200)),
+        sa.Column("details", JSONB, nullable=False, server_default="{}"),
+        sa.Column("ip_address", sa.String(45)),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+    )
+    op.create_index("ix_audit_events_org_id", "audit_events", ["org_id"])
+    op.create_index("ix_audit_events_created_at", "audit_events", ["created_at"])
+    op.create_index("ix_audit_events_action", "audit_events", ["action"])
+
 
 def downgrade() -> None:
+    op.drop_table("audit_events")
     op.drop_table("data_sources")
     op.drop_table("qa_logs")
     op.drop_table("prompt_templates")
