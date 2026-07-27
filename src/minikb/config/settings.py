@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     embedding_model: str = "text-embedding-3-small"
     embedding_dim: int = 1536
+    # openai | mock | auto（auto：DeepSeek 等无 embeddings 的上游走 mock）
+    embedding_provider: Literal["openai", "mock", "auto"] = "auto"
 
     # --- Auth ---
     default_org_slug: str = "default"

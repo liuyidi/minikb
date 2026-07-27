@@ -129,7 +129,10 @@ class IngestPipeline:
                 document.status = DocumentStatus.FAILED
                 document.error = str(e)[:1000]
                 await self._fail_job(session, job_id, str(e))
-                raise
+                # Commit failure state before exiting — get_session() would
+                # otherwise rollback on the re-raise and leave status=pending.
+                await session.commit()
+                return
 
     async def _generate_embeddings(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for a list of texts."""

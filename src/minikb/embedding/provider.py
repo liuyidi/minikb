@@ -84,7 +84,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
 
 class MockEmbeddingProvider(EmbeddingProvider):
-    """Mock embedding provider for testing."""
+    """Deterministic mock embeddings for demos / providers without /embeddings."""
 
     def __init__(self, dimension: int = 1536):
         self._dimension = dimension
@@ -94,16 +94,45 @@ class MockEmbeddingProvider(EmbeddingProvider):
         return self._dimension
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        """Generate random embeddings for testing."""
-        import random
-        return [
-            [random.random() for _ in range(self._dimension)]
-            for _ in texts
-        ]
+        """Hash-based unit vectors so the same text maps to the same embedding."""
+        import hashlib
+        import math
+
+        out: list[list[float]] = []
+        for text in texts:
+            digest = hashlib.sha256(text.encode("utf-8")).digest()
+            # Expand digest into `dimension` floats in [-1, 1]
+            vals: list[float] = []
+            seed = digest
+            while len(vals) < self._dimension:
+                seed = hashlib.sha256(seed).digest()
+                for b in seed:
+                    vals.append((b / 127.5) - 1.0)
+                    if len(vals) >= self._dimension:
+                        break
+            # L2 normalize
+            norm = math.sqrt(sum(v * v for v in vals)) or 1.0
+            out.append([v / norm for v in vals])
+        return out
 
 
 # Provider registry
 _provider: EmbeddingProvider | None = None
+
+
+def _should_use_mock(settings: Any) -> bool:
+    mode = str(getattr(settings, "embedding_provider", "auto") or "auto").lower()
+    if mode == "mock":
+        return True
+    if mode == "openai":
+        return False
+    # auto: DeepSeek (and similar chat-only gateways) do not expose /v1/embeddings
+    base = (settings.openai_base_url or "").lower()
+    if "deepseek" in base:
+        return True
+    if not settings.openai_api_key:
+        return True
+    return False
 
 
 def get_provider() -> EmbeddingProvider:
@@ -112,7 +141,14 @@ def get_provider() -> EmbeddingProvider:
     if _provider is None:
         settings = get_settings()
 
-        if settings.openai_api_key:
+        if _should_use_mock(settings):
+            _provider = MockEmbeddingProvider(dimension=settings.embedding_dim)
+            logger.warning(
+                "Using mock embeddings (provider=%s base=%s)",
+                getattr(settings, "embedding_provider", "auto"),
+                settings.openai_base_url,
+            )
+        else:
             _provider = OpenAIEmbeddingProvider(
                 api_key=settings.openai_api_key,
                 model=settings.embedding_model,
@@ -120,10 +156,6 @@ def get_provider() -> EmbeddingProvider:
                 dimension=settings.embedding_dim,
             )
             logger.info("Using OpenAI embedding provider: %s", settings.embedding_model)
-        else:
-            # Fall back to mock for dev/testing
-            _provider = MockEmbeddingProvider(dimension=settings.embedding_dim)
-            logger.warning("No OpenAI API key configured, using mock embeddings")
 
     return _provider
 
