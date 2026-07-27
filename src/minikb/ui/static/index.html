@@ -255,6 +255,37 @@
             display: inline-block; background: #e8f0fe; padding: 3px 8px;
             border-radius: 4px; font-size: 12px; margin: 2px; cursor: pointer;
         }
+
+        /* ─── Animations ──────────────────────────────────────── */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+        .icon-spin {
+            display: inline-block;
+            animation: spin 1.2s linear infinite;
+        }
+        .icon-pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ─── Progress ───────────────────────────────────────── */
+        .progress-bar {
+            height: 6px;
+            background: #e8e8e8;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: #1a1a2e;
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+        .progress-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -921,18 +952,49 @@ async function loadDocuments() {
 
     const resp = await fetch(`${API_BASE}/kb/${kbId}/documents`);
     const data = await resp.json();
-    if (data.items.length === 0) { container.innerHTML = `<div class="card empty-state"><div class="icon">📄</div><p>${t('doc.empty')}</p></div>`; return; }
+    if (data.items.length === 0) { container.innerHTML = `<div class="card empty-state"><div class="icon"></div><p>${t('doc.empty')}</p></div>`; return; }
 
-    container.innerHTML = data.items.map(doc => `
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title">${escapeHtml(doc.title)}</span>
-                <span class="badge ${getStatusBadge(doc.status)}">${doc.status}</span>
+    // Progress summary
+    const total = data.items.length;
+    const ready = data.items.filter(d => d.status === 'ready').length;
+    const failed = data.items.filter(d => d.status === 'failed').length;
+    const processing = total - ready - failed;
+    const pct = total > 0 ? Math.round(ready/total*100) : 0;
+
+    let progressHtml = '';
+    if (processing > 0) {
+        progressHtml = `<div class="card" style="padding:12px 16px;margin-bottom:12px;">
+            <div class="flex flex-between" style="align-items:center;">
+                <span class="text-sm"><span class="icon-spin" style="font-size:14px;">⚙️</span> Processing: <strong>${processing}</strong> / ${total} docs</span>
+                <span class="text-sm" style="color:#1a56db;">${pct}% done</span>
             </div>
-            <div class="card-meta">${doc.mime || 'unknown'} · ${formatBytes(doc.size_bytes)} · ${new Date(doc.created_at).toLocaleString(currentLocale)}</div>
+            <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    }
+
+    const stageLabels = { pending:'Queued', parsing:'Parsing...', chunking:'Chunking...', embedding:'Embedding...' };
+    const stageIcons = { pending:'⏳', parsing:'<span class="icon-pulse" style="font-size:14px;">📄</span>', chunking:'<span class="icon-spin" style="font-size:14px;">✂️</span>', embedding:'<span class="icon-pulse" style="font-size:14px;">🧠</span>' };
+
+    container.innerHTML = progressHtml + data.items.map(doc => {
+        const isProcessing = ['pending','parsing','chunking','embedding'].includes(doc.status);
+        const icon = doc.status === 'ready' ? '✅' : doc.status === 'failed' ? '❌' : (stageIcons[doc.status] || '');
+        const badgeText = isProcessing ? (stageLabels[doc.status]||doc.status) : doc.status;
+        return `<div class="card">
+            <div class="card-header">
+                <span class="card-title">${icon} ${escapeHtml(doc.title)}</span>
+                <span class="badge ${getStatusBadge(doc.status)}">${badgeText}</span>
+            </div>
+            <div class="card-meta">${doc.mime||'unknown'} · ${formatBytes(doc.size_bytes)} · ${new Date(doc.created_at).toLocaleString(currentLocale)}</div>
             ${doc.error ? `<p class="mt-10 text-sm" style="color:#dc3545;">${escapeHtml(doc.error)}</p>` : ''}
             <div class="mt-10"><button class="btn btn-danger btn-sm" onclick="deleteDoc('${kbId}','${doc.id}')">${t('doc.delete')}</button></div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
+
+    // Auto-refresh while processing
+    if (processing > 0) {
+        clearTimeout(window._docRefreshTimer);
+        window._docRefreshTimer = setTimeout(loadDocuments, 3000);
+    }
 }
 
 async function deleteDoc(kbId, docId) {
@@ -986,10 +1048,56 @@ async function loadDataSources() {
         const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources`);
         const data = await resp.json();
         if (data.items.length === 0) { container.innerHTML = `<div class="card empty-state"><div class="icon">🔌</div><p>${t('src.empty')}</p></div>`; return; }
-        container.innerHTML = data.items.map(ds => {
+
+        // Sync progress summary
+        const syncing = data.items.filter(ds => ds.status === 'syncing');
+        const totalSynced = data.items.reduce((sum, ds) => sum + (ds.stats?.total_synced || 0), 0);
+        const totalErrors = data.items.filter(ds => ds.status === 'error').length;
+
+        let summaryHtml = '';
+        if (syncing.length > 0) {
+            summaryHtml = `<div class="card" style="padding:12px 16px;margin-bottom:12px;">
+                <div class="flex flex-between" style="align-items:center;">
+                    <span class="text-sm"><span class="icon-spin" style="font-size:14px;">🔄</span> Syncing: <strong>${syncing.length}</strong> source(s) · ${totalSynced} records synced</span>
+                    ${totalErrors > 0 ? `<span class="text-sm" style="color:#dc3545;">${totalErrors} error(s)</span>` : ''}
+                </div>
+            </div>`;
+        } else if (totalSynced > 0) {
+            summaryHtml = `<div class="card" style="padding:12px 16px;margin-bottom:12px;">
+                <span class="text-sm">✅ All idle · <strong>${totalSynced}</strong> total records synced across ${data.items.length} source(s)</span>
+            </div>`;
+        }
+
+        const statusIcons = { idle:'✅', syncing:'<span class="icon-spin" style="font-size:14px;">🔄</span>', error:'❌' };
+        const statusLabels = { idle:'Idle', syncing:'Syncing...', error:'Error' };
+
+        container.innerHTML = summaryHtml + data.items.map(ds => {
             const badge = ds.status === 'idle' ? 'badge-success' : ds.status === 'syncing' ? 'badge-warning' : 'badge-danger';
-            return `<div class="card"><div class="card-header"><span class="card-title">${escapeHtml(ds.name)}</span><span class="badge ${badge}">${ds.status}</span></div><div class="card-meta">${t('src.type')}: ${ds.kind} · ${t('src.lastSync')}: ${ds.last_sync_at ? new Date(ds.last_sync_at).toLocaleString(currentLocale) : t('src.never')} · ${t('src.records')}: ${ds.stats?.total_synced || 0}</div>${ds.last_error ? `<p class="text-sm mt-10" style="color:#dc3545;">${escapeHtml(ds.last_error)}</p>` : ''}<div class="mt-10 flex flex-gap"><button class="btn btn-secondary btn-sm" onclick="syncDataSource('${kbId}','${ds.id}')">${t('src.sync')}</button><button class="btn btn-secondary btn-sm" onclick="probeDataSource('${kbId}','${ds.id}')">${t('src.test')}</button><button class="btn btn-danger btn-sm" onclick="deleteDataSource('${kbId}','${ds.id}')">${t('src.delete')}</button></div></div>`;
+            const icon = statusIcons[ds.status] || '';
+            const label = statusLabels[ds.status] || ds.status;
+            const synced = ds.stats?.total_synced || 0;
+            const syncProgress = ds.status === 'syncing' && synced > 0 ? `<div class="progress-bar" style="margin-top:6px;"><div class="progress-bar-fill" style="width:${Math.min(synced,100)}%"></div></div><div class="progress-text">${synced} records synced so far...</div>` : '';
+            return `<div class="card">
+                <div class="card-header">
+                    <span class="card-title">${icon} ${escapeHtml(ds.name)}</span>
+                    <span class="badge ${badge}">${label}</span>
+                </div>
+                <div class="card-meta">${t('src.type')}: ${ds.kind} · ${t('src.lastSync')}: ${ds.last_sync_at ? new Date(ds.last_sync_at).toLocaleString(currentLocale) : t('src.never')} · ${t('src.records')}: ${synced}</div>
+                ${syncProgress}
+                ${ds.last_error ? `<p class="text-sm mt-10" style="color:#dc3545;">${escapeHtml(ds.last_error)}</p>` : ''}
+                <div class="mt-10 flex flex-gap">
+                    <button class="btn btn-secondary btn-sm" onclick="syncDataSource('${kbId}','${ds.id}')">${t('src.sync')}</button>
+                    <button class="btn btn-secondary btn-sm" onclick="probeDataSource('${kbId}','${ds.id}')">${t('src.test')}</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteDataSource('${kbId}','${ds.id}')">${t('src.delete')}</button>
+                </div>
+            </div>`;
         }).join('');
+
+        // Auto-refresh while syncing
+        if (syncing.length > 0) {
+            clearTimeout(window._dsRefreshTimer);
+            window._dsRefreshTimer = setTimeout(loadDataSources, 3000);
+        }
     } catch (e) { container.innerHTML = `<p style="color:#dc3545;">${e.message}</p>`; }
 }
 
