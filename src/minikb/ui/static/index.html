@@ -283,6 +283,7 @@
         <div class="tabs">
             <div class="tab active" data-panel="kb-list">Knowledge Bases</div>
             <div class="tab" data-panel="documents">Documents</div>
+            <div class="tab" data-panel="chunks">Chunks</div>
             <div class="tab" data-panel="retrieval">Retrieval</div>
         </div>
 
@@ -307,6 +308,25 @@
                 </div>
             </div>
             <div id="doc-items"></div>
+        </div>
+
+        <!-- Chunks Panel -->
+        <div id="chunks" class="panel">
+            <div class="flex flex-between flex-center mb-20">
+                <h2>Chunks <span id="chunk-kb-name" class="text-muted text-sm"></span></h2>
+                <div class="flex flex-gap">
+                    <select id="chunk-kb-select" onchange="loadChunks()">
+                        <option value="">Select KB...</option>
+                    </select>
+                    <select id="chunk-doc-select" onchange="loadChunks()">
+                        <option value="">All documents</option>
+                    </select>
+                    <input type="text" id="chunk-search" placeholder="Search chunks..." style="width: 200px;" onkeyup="debounce(loadChunks, 300)()">
+                </div>
+            </div>
+            <div id="chunk-stats" class="mb-20"></div>
+            <div id="chunk-items" style="max-height: 600px; overflow-y: auto;"></div>
+            <div id="chunk-pagination" class="mt-20 flex flex-between flex-center"></div>
         </div>
 
         <!-- Retrieval Panel -->
@@ -373,7 +393,7 @@
         const API_BASE = '/v1';
         let currentKbId = null;
 
-        // Tab switching
+        // Tab switching - updated to include chunks
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -382,6 +402,7 @@
                 document.getElementById(tab.dataset.panel).classList.add('active');
 
                 if (tab.dataset.panel === 'documents') loadKbOptions();
+                if (tab.dataset.panel === 'chunks') { loadKbOptions(); }
                 if (tab.dataset.panel === 'retrieval') loadKbOptions();
             });
         });
@@ -432,6 +453,8 @@
             ).join('');
 
             document.getElementById('doc-kb-select').innerHTML =
+                '<option value="">Select KB...</option>' + options;
+            document.getElementById('chunk-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
             document.getElementById('retrieval-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
@@ -662,6 +685,154 @@
             } catch (e) {
                 container.innerHTML = `<p style="color: #dc3545;">Error: ${e.message}</p>`;
             }
+        }
+
+        // ─── Chunks Panel ────────────────────────────────────────────────────
+
+        let chunkPage = 0;
+        const chunkPageSize = 50;
+
+        async function loadChunks() {
+            const kbId = document.getElementById('chunk-kb-select').value;
+            const docId = document.getElementById('chunk-doc-select').value;
+            const search = document.getElementById('chunk-search').value;
+            const container = document.getElementById('chunk-items');
+            const statsContainer = document.getElementById('chunk-stats');
+
+            if (!kbId) {
+                container.innerHTML = '<div class="empty-state">Select a knowledge base</div>';
+                statsContainer.innerHTML = '';
+                return;
+            }
+
+            // Load stats
+            try {
+                const statsResp = await fetch(`${API_BASE}/kb/${kbId}/chunks/stats`);
+                if (statsResp.ok) {
+                    const stats = await statsResp.json();
+                    statsContainer.innerHTML = `
+                        <div class="flex flex-gap" style="gap: 20px;">
+                            <div class="card" style="flex: 1; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 600;">${stats.total_chunks}</div>
+                                <div class="text-sm text-muted">Total Chunks</div>
+                            </div>
+                            <div class="card" style="flex: 1; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 600;">${stats.total_tokens?.toLocaleString() || 0}</div>
+                                <div class="text-sm text-muted">Total Tokens</div>
+                            </div>
+                            <div class="card" style="flex: 1; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 600;">${stats.avg_chunk_chars || 0}</div>
+                                <div class="text-sm text-muted">Avg Chars/Chunk</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (e) { /* ignore stats errors */ }
+
+            // Load documents for filter dropdown
+            try {
+                const docsResp = await fetch(`${API_BASE}/kb/${kbId}/documents`);
+                if (docsResp.ok) {
+                    const docsData = await docsResp.json();
+                    const docOptions = docsData.items.map(d =>
+                        `<option value="${d.id}" ${d.id === docId ? 'selected' : ''}>${d.title}</option>`
+                    ).join('');
+                    document.getElementById('chunk-doc-select').innerHTML =
+                        '<option value="">All documents</option>' + docOptions;
+                }
+            } catch (e) { /* ignore */ }
+
+            // Load chunks
+            const params = new URLSearchParams({
+                limit: chunkPageSize.toString(),
+                offset: (chunkPage * chunkPageSize).toString(),
+            });
+            if (docId) params.set('document_id', docId);
+            if (search) params.set('search', search);
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/chunks?${params}`);
+                const data = await resp.json();
+
+                if (data.items.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🧩</div>
+                            <p>${search ? 'No chunks match your search' : 'No chunks yet. Upload and process documents first.'}</p>
+                        </div>
+                    `;
+                    document.getElementById('chunk-pagination').innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = data.items.map((chunk, i) => {
+                    const headingPath = chunk.meta?.heading_path || chunk.meta?.enriched_heading_path;
+                    const headingHtml = headingPath
+                        ? `<div class="text-sm text-muted mb-10" style="color: #1a73e8;">📍 ${escapeHtml(Array.isArray(headingPath) ? headingPath.join(' > ') : headingPath)}</div>`
+                        : '';
+
+                    return `
+                        <div class="card" style="cursor: pointer;" onclick="toggleChunkDetail('chunk-${chunk.id}')">
+                            <div class="card-header">
+                                <span class="card-title">Chunk #${chunk.seq + 1}</span>
+                                <span class="badge badge-info">${chunk.tokens || '?'} tokens</span>
+                            </div>
+                            ${headingHtml}
+                            <div class="result-text" style="max-height: ${document.getElementById('chunk-' + chunk.id + '-expanded') ? 'none' : '100px'};">${highlightSearch(escapeHtml(chunk.text), search)}</div>
+                            <div id="chunk-${chunk.id}-expanded" style="display: none;">
+                                <div class="mt-10 text-sm text-muted">
+                                    <strong>ID:</strong> ${chunk.id}<br>
+                                    <strong>Document:</strong> ${chunk.document_id}<br>
+                                    ${chunk.meta?.language ? `<strong>Language:</strong> ${chunk.meta.language}<br>` : ''}
+                                    ${chunk.content_hash ? `<strong>Hash:</strong> ${chunk.content_hash}` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Pagination
+                const totalPages = Math.ceil(data.total / chunkPageSize);
+                const pagContainer = document.getElementById('chunk-pagination');
+                if (totalPages > 1) {
+                    pagContainer.innerHTML = `
+                        <button class="btn btn-secondary text-sm" onclick="chunkPageChange(-1)" ${chunkPage === 0 ? 'disabled' : ''}>← Prev</button>
+                        <span class="text-sm text-muted">Page ${chunkPage + 1} of ${totalPages} (${data.total} chunks)</span>
+                        <button class="btn btn-secondary text-sm" onclick="chunkPageChange(1)" ${chunkPage >= totalPages - 1 ? 'disabled' : ''}>Next →</button>
+                    `;
+                } else {
+                    pagContainer.innerHTML = `<span class="text-sm text-muted">${data.total} chunks</span>`;
+                }
+            } catch (e) {
+                container.innerHTML = `<p style="color: #dc3545;">Error loading chunks: ${e.message}</p>`;
+            }
+        }
+
+        function chunkPageChange(delta) {
+            chunkPage = Math.max(0, chunkPage + delta);
+            loadChunks();
+        }
+
+        function toggleChunkDetail(id) {
+            const el = document.getElementById(id + '-expanded');
+            if (el) {
+                el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        function highlightSearch(text, query) {
+            if (!query) return text;
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<mark style="background: #fff3cd; padding: 1px 2px;">$1</mark>');
+        }
+
+        let _debounceTimers = {};
+        function debounce(fn, delay) {
+            return function(...args) {
+                const key = fn.name || 'default';
+                clearTimeout(_debounceTimers[key]);
+                _debounceTimers[key] = setTimeout(() => fn.apply(this, args), delay);
+            };
         }
 
         function escapeHtml(text) {

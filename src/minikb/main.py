@@ -12,7 +12,14 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from minikb import __version__
-from minikb.api.routes import api_keys_router, documents_router, ingest_router, kb_router, retrieval_router
+from minikb.api.routes import (
+    api_keys_router,
+    chunks_router,
+    documents_router,
+    ingest_router,
+    kb_router,
+    retrieval_router,
+)
 from minikb.config.settings import get_settings
 from minikb.db import ApiKey, Org, User, close_db, init_db, session_scope
 
@@ -115,6 +122,7 @@ def create_app() -> FastAPI:
     app.include_router(kb_router)
     app.include_router(api_keys_router)
     app.include_router(documents_router)
+    app.include_router(chunks_router)
     app.include_router(retrieval_router)
     app.include_router(ingest_router)
 

@@ -21,8 +21,9 @@ async def vector_search(
     Returns list of hits with chunk info and similarity scores.
     """
     async for session in get_session():
-        # Use pgvector cosine distance
+        # pgvector expects vector type, not float[]; pass literal string + cast.
         # Note: 1 - cosine_distance = cosine_similarity
+        vector_literal = "[" + ",".join(str(float(x)) for x in query_embedding) + "]"
         sql = text("""
             SELECT
                 c.id,
@@ -32,17 +33,17 @@ async def vector_search(
                 c.tokens,
                 d.title as doc_title,
                 d.uri as doc_uri,
-                1 - (c.embedding <=> :query_vector) as score
+                1 - (c.embedding <=> CAST(:query_vector AS vector)) as score
             FROM chunks c
             JOIN documents d ON c.document_id = d.id
             WHERE c.kb_id = :kb_id
               AND c.embedding IS NOT NULL
-            ORDER BY c.embedding <=> :query_vector
+            ORDER BY c.embedding <=> CAST(:query_vector AS vector)
             LIMIT :top_k
         """)
 
         result = await session.execute(sql, {
-            "query_vector": query_embedding,
+            "query_vector": vector_literal,
             "kb_id": kb_id,
             "top_k": top_k,
         })

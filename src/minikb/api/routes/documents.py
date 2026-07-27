@@ -1,9 +1,11 @@
 """Document upload and management routes."""
 from __future__ import annotations
 
+import asyncio
+import logging
 import uuid
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +14,8 @@ from minikb.api.schemas import DocumentListResponse, DocumentResponse
 from minikb.config.settings import get_settings
 from minikb.db import Document, IngestJob, JobKind, JobStatus, DocumentStatus
 from minikb.storage import upload_file
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/kb/{kb_id}/documents", tags=["documents"])
 
@@ -89,6 +93,7 @@ async def list_documents(
 
 @router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     session: SessionDep = None,  # type: ignore
     kb: KbDep = None,  # type: ignore
@@ -96,6 +101,7 @@ async def upload_document(
     """Upload a document to the knowledge base.
 
     The file will be stored in MinIO and an ingest job will be created.
+    Processing happens in the background.
     """
     if session is None or kb is None:
         # These are injected by FastAPI dependencies
@@ -167,12 +173,24 @@ async def upload_document(
     session.add(job)
     await session.flush()
 
-    # TODO: Enqueue job to RQ worker (will be implemented in Task 5)
-    # from minikb.ingest.workers import enqueue_job
-    # enqueue_job(job.id)
-
+    # Commit before scheduling background work so the worker can see the rows.
+    # Otherwise FastAPI BackgroundTasks can race the request session commit.
+    document_id = document.id
+    job_id = job.id
+    await session.commit()
     await session.refresh(document)
+
+    background_tasks.add_task(_process_document_background, document_id, job_id)
     return document
+
+
+async def _process_document_background(document_id: uuid.UUID, job_id: uuid.UUID) -> None:
+    """Background task to process a document."""
+    try:
+        from minikb.ingest.workers import process_document
+        await process_document(document_id, job_id)
+    except Exception as e:
+        logger.exception("Background processing failed for document %s: %s", document_id, e)
 
 
 @router.get("/{document_id}", response_model=DocumentResponse)

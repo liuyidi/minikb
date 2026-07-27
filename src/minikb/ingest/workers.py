@@ -21,7 +21,8 @@ from minikb.db import (
     KnowledgeBase,
     get_session,
 )
-from minikb.ingest.chunkers import Chunk as IngestChunk, RecursiveChunker
+from minikb.ingest.chunkers import Chunk as IngestChunk, RecursiveChunker, get_chunker
+from minikb.ingest.enrichers import EnricherPipeline, enrich_chunks
 from minikb.ingest.parsers import parse_document
 from minikb.storage import download_file
 
@@ -79,10 +80,26 @@ class IngestPipeline:
                 document.status = DocumentStatus.CHUNKING
                 await session.flush()
 
-                chunks = self.chunker.chunk(
+                # Determine chunker strategy from document meta or KB config
+                chunker_strategy = document.meta.get("chunker_strategy", "recursive")
+                chunker_params = document.meta.get("chunker_params", {})
+                try:
+                    chunker = get_chunker(chunker_strategy, **chunker_params)
+                except ValueError:
+                    chunker = RecursiveChunker(max_tokens=500, overlap=50)
+
+                chunks = chunker.chunk(
                     parsed.text,
                     meta={"document_id": str(document.id)},
                 )
+
+                # Step 2.5: Enrich chunks
+                enrich_context = {
+                    "doc_title": document.title,
+                    "description": document.meta.get("description", ""),
+                    **parsed.meta,
+                }
+                chunks = enrich_chunks(chunks, enrich_context)
 
                 # Step 3: Generate embeddings
                 await self._update_job_status(session, job_id, "embedding")
