@@ -1,0 +1,23 @@
+src/minikb/config/settings.py
+  s_6d7f85b34e18a1::t_23bd4f1af663b3 47-48
+src/minikb/embedding/provider.py
+  s_6d7f85b34e18a1::t_16367802a216c9 87,97-116,123-137,144-151
+src/minikb/ingest/workers.py
+  s_6d7f85b34e18a1::t_a0e3c32d9e81e7 132-135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "508ec765816584befeb92b02f36cca42adf13e43",
+  "prompts": {},
+  "sessions": {
+    "s_6d7f85b34e18a1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "88a3d5a1-260b-4346-82aa-244915858d5b",
+        "model": "default"
+      },
+      "human_author": "liuyidi1993@gmail.com <yidiliu@trip.com>"
+    }
+  }
+}
