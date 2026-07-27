@@ -1,0 +1,21 @@
+src/minikb/ui/static/index.html
+  s_6d7f85b34e18a1::t_87739409bc97f0 619
+  s_6d7f85b34e18a1::t_c7398b1403972d 419
+  s_6d7f85b34e18a1::t_b1724822a79190 586
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "0256b983e13eefe3f5bd298f6476db89f23684dc",
+  "prompts": {},
+  "sessions": {
+    "s_6d7f85b34e18a1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "88a3d5a1-260b-4346-82aa-244915858d5b",
+        "model": "default"
+      },
+      "human_author": "liuyidi1993@gmail.com <yidiliu@trip.com>"
+    }
+  }
+}
