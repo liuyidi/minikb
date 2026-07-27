@@ -1,5 +1,6 @@
 """Data source connectors package."""
 from minikb.connectors.base import Connector, SourceRecord, SyncResult
+from minikb.connectors.feishu_connector import FeishuConnector
 from minikb.connectors.git_connector import GitConnector
 from minikb.connectors.sql_connector import SQLConnector
 from minikb.connectors.url_connector import URLConnector
@@ -11,6 +12,7 @@ __all__ = [
     "URLConnector",
     "GitConnector",
     "SQLConnector",
+    "FeishuConnector",
     "get_connector",
     "list_connectors",
 ]
@@ -20,6 +22,7 @@ _CONNECTORS: dict[str, type[Connector]] = {
     "url": URLConnector,
     "git": GitConnector,
     "sql": SQLConnector,
+    "feishu": FeishuConnector,
 }
 
 

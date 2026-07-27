@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>minikb - 知识库平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: #1a1a2e;
+            color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        header p {
+            opacity: 0.7;
+            font-size: 14px;
+        }
+        .lang-switch {
+            position: absolute;
+            right: 20px;
+            top: 22px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .lang-switch select {
+            background: rgba(255,255,255,0.12);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        header .container { position: relative; }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            background: #f0f0f0;
+        }
+        .tab.active {
+            background: #1a1a2e;
+            color: white;
+            border-color: #1a1a2e;
+        }
+        .panel {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .panel.active {
+            display: block;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background: #1a1a2e;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #16213e;
+        }
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #1a1a2e;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .card {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .card:hover {
+            border-color: #ddd;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .card-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .card-meta {
+            font-size: 12px;
+            color: #666;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            opacity: 0.3;
+        }
+        .search-results {
+            margin-top: 20px;
+        }
+        .result-item {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .result-score {
+            float: right;
+            background: #1a1a2e;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .result-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-area:hover {
+            border-color: #1a1a2e;
+            background: #fafafa;
+        }
+        .upload-area.dragover {
+            border-color: #1a1a2e;
+            background: #f0f0ff;
+        }
+        .flex {
+            display: flex;
+        }
+        .flex-gap {
+            gap: 10px;
+        }
+        .flex-between {
+            justify-content: space-between;
+        }
+        .flex-center {
+            align-items: center;
+        }
+        .control-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 42px;
+        }
+        .control-bar select {
+            height: 42px;
+        }
+        .mt-10 { margin-top: 10px; }
+        .mt-20 { margin-top: 20px; }
+        .mb-10 { margin-bottom: 10px; }
+        .mb-20 { margin-bottom: 20px; }
+        .text-sm { font-size: 12px; }
+        .text-muted { color: #666; }
+        /* QA Chat styles */
+        .qa-answer { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .qa-answer pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; }
+        .qa-meta { font-size: 12px; color: #666; margin-top: 10px; }
+        .qa-citations { margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        .qa-citation { display: inline-block; background: #e8f0fe; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin: 2px; cursor: pointer; }
+        .qa-citation:hover { background: #d2e3fc; }
+        .qa-faithfulness { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .qa-faithfulness.high { background: #d4edda; color: #155724; }
+        .qa-faithfulness.medium { background: #fff3cd; color: #856404; }
+        .qa-faithfulness.low { background: #f8d7da; color: #721c24; }
+        .qa-feedback { margin-top: 10px; }
+        .qa-feedback button { padding: 4px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; margin-right: 5px; }
+        .qa-feedback button:hover { background: #f0f0f0; }
+        .qa-feedback button.active-up { background: #d4edda; border-color: #28a745; }
+        .qa-feedback button.active-down { background: #f8d7da; border-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📚 minikb</h1>
+            <p data-i18n="subtitle">面向 Agent 的知识库平台</p>
+            <div class="lang-switch">
+                <select id="lang-select" aria-label="Language" onchange="setLocale(this.value)">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-panel="kb-list" data-i18n="tab.kb">知识库</div>
+            <div class="tab" data-panel="documents" data-i18n="tab.documents">文档</div>
+            <div class="tab" data-panel="sources" data-i18n="tab.sources">数据源</div>
+            <div class="tab" data-panel="chunks" data-i18n="tab.chunks">分片</div>
+            <div class="tab" data-panel="retrieval" data-i18n="tab.retrieval">检索</div>
+            <div class="tab" data-panel="qa" data-i18n="tab.qa">问答</div>
+            <div class="tab" data-panel="eval" data-i18n="tab.eval">评测</div>
+            <div class="tab" data-panel="settings" data-i18n="tab.settings">设置</div>
+        </div>
+
+        <!-- Knowledge Bases Panel -->
+        <div id="kb-list" class="panel active">
+            <div class="flex flex-between flex-center mb-20">
+                <h2 data-i18n="kb.title">知识库</h2>
+                <button class="btn btn-primary" onclick="showCreateKbModal()" data-i18n="kb.create">+ 创建知识库</button>
+            </div>
+            <div id="kb-items"></div>
+        </div>
+
+        <!-- Documents Panel -->
+        <div id="documents" class="panel">
+            <div class="flex flex-between flex-center mb-20">
+                <h2><span data-i18n="doc.title">文档</span> <span id="doc-kb-name" class="text-muted text-sm"></span></h2>
+                <div class="control-bar">
+                    <select id="doc-kb-select" onchange="loadDocuments()">
+                        <option value="" data-i18n="select.kb">选择知识库...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showUploadModal()" data-i18n="doc.upload">上传</button>
+                </div>
+            </div>
+            <div id="doc-items"></div>
+        </div>
+
+        <!-- Data Sources Panel -->
+        <div id="sources" class="panel">
+            <div class="flex flex-between flex-center mb-20">
+                <h2 data-i18n="src.title">数据源</h2>
+                <div class="control-bar">
+                    <select id="source-kb-select" onchange="loadDataSources()" style="width: 200px;">
+                        <option value="" data-i18n="select.kb">选择知识库...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showAddSourceModal()" data-i18n="src.add">+ 添加数据源</button>
+                </div>
+            </div>
+            <div id="source-items"></div>
+        </div>
+
+        <!-- Chunks Panel -->
+        <div id="chunks" class="panel">
+            <div class="flex flex-between flex-center mb-20">
+                <h2><span data-i18n="chunk.title">分片</span> <span id="chunk-kb-name" class="text-muted text-sm"></span></h2>
+                <div class="control-bar">
+                    <select id="chunk-kb-select" onchange="loadChunks()">
+                        <option value="" data-i18n="select.kb">选择知识库...</option>
+                    </select>
+                    <select id="chunk-doc-select" onchange="loadChunks()">
+                        <option value="">All documents</option>
+                    </select>
+                    <input type="text" id="chunk-search" placeholder="搜索分片..." data-i18n-placeholder="chunk.search" style="width: 200px;" onkeyup="debounce(loadChunks, 300)()">
+                </div>
+            </div>
+            <div id="chunk-stats" class="mb-20"></div>
+            <div id="chunk-items" style="max-height: 600px; overflow-y: auto;"></div>
+            <div id="chunk-pagination" class="mt-20 flex flex-between flex-center"></div>
+        </div>
+
+        <!-- Retrieval Panel -->
+        <div id="retrieval" class="panel">
+            <h2 class="mb-20" data-i18n="ret.title">检索试验台</h2>
+            <div class="control-bar mb-20">
+                <select id="retrieval-kb-select" style="flex: 1;">
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
+                </select>
+                <select id="retrieval-mode" style="width: 120px;">
+                    <option value="vector">Vector</option>
+                    <option value="keyword">Keyword</option>
+                    <option value="hybrid">Hybrid</option>
+                </select>
+            </div>
+            <div class="flex flex-gap mb-20" style="align-items: center;">
+                <label style="margin: 0; white-space: nowrap;">
+                    <input type="checkbox" id="retrieval-rerank" onchange="toggleRerankOptions()"> Rerank
+                </label>
+                <select id="rerank-provider" style="width: 120px; display: none;">
+                    <option value="mock">Mock</option>
+                    <option value="bm25">BM25</option>
+                    <option value="cohere">Cohere</option>
+                </select>
+                <label style="margin: 0; white-space: nowrap; display: none;" id="rerank-topn-label">Top N:</label>
+                <input type="number" id="rerank-top-n" value="5" min="1" max="20" style="width: 60px; display: none; margin: 0;">
+            </div>
+            <div class="form-group">
+                <textarea id="retrieval-query" rows="3" placeholder="Enter your search query..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="doRetrieval()" data-i18n="ret.search">搜索</button>
+            <div id="retrieval-results" class="search-results"></div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="settings" class="panel">
+            <h2 class="mb-20" data-i18n="set.title">知识库设置</h2>
+            <div class="control-bar mb-20">
+                <select id="settings-kb-select" onchange="loadSettings()" style="width: 250px;">
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
+                </select>
+            </div>
+            <div id="settings-content"></div>
+        </div>
+
+        <!-- Eval Panel -->
+        <div id="eval" class="panel">
+            <div class="flex flex-between flex-center mb-20">
+                <h2 data-i18n="eval.title">评测</h2>
+                <div class="control-bar">
+                    <select id="eval-kb-select" onchange="loadEvalDatasets()" style="width: 200px;">
+                        <option value="" data-i18n="select.kb">选择知识库...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showCreateDatasetModal()" data-i18n="eval.dataset">+ 数据集</button>
+                </div>
+            </div>
+            <div id="eval-datasets"></div>
+            <div id="eval-runs" class="mt-20"></div>
+        </div>
+
+        <!-- QA Panel -->
+        <div id="qa" class="panel">
+            <h2 class="mb-20" data-i18n="qa.title">问答试验台</h2>
+            <div class="control-bar mb-20">
+                <select id="qa-kb-select" style="flex: 1;">
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
+                </select>
+                <select id="qa-mode" style="width: 120px;">
+                    <option value="vector">Vector</option>
+                    <option value="keyword">Keyword</option>
+                    <option value="hybrid">Hybrid</option>
+                </select>
+                <input type="number" id="qa-top-k" value="6" min="1" max="20" style="width: 80px;" title="Top K">
+            </div>
+            <div class="form-group">
+                <textarea id="qa-query" rows="3" placeholder="就知识库内容提问..." data-i18n-placeholder="qa.placeholder"></textarea>
+            </div>
+            <div class="flex flex-gap mb-20">
+                <button class="btn btn-primary" onclick="doQA()" data-i18n="qa.ask">提问</button>
+                <button class="btn btn-secondary" onclick="clearQA()" data-i18n="qa.clear">清空</button>
+            </div>
+            <div id="qa-results"></div>
+        </div>
+    </div>
+
+    <!-- Add Data Source Modal -->
+    <div id="add-source-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Add Data Source</div>
+            <div class="form-group">
+                <label>Source Type</label>
+                <select id="source-kind" onchange="updateSourceForm()">
+                    <option value="url">URL</option>
+                    <option value="git">Git Repository</option>
+                    <option value="sql">SQL Database</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="source-name" placeholder="My Data Source">
+            </div>
+            <div id="source-url-fields">
+                <div class="form-group">
+                    <label>URLs (one per line)</label>
+                    <textarea id="source-urls" rows="3" placeholder="https://example.com/page1"></textarea>
+                </div>
+            </div>
+            <div id="source-git-fields" style="display:none">
+                <div class="form-group">
+                    <label>Repository URL</label>
+                    <input type="text" id="source-repo-url" placeholder="https://github.com/user/repo">
+                </div>
+                <div class="form-group">
+                    <label>Branch (optional)</label>
+                    <input type="text" id="source-branch" placeholder="main">
+                </div>
+            </div>
+            <div id="source-sql-fields" style="display:none">
+                <div class="form-group">
+                    <label>Connection String</label>
+                    <input type="text" id="source-conn-string" placeholder="postgresql://user:pass@host/db">
+                </div>
+                <div class="form-group">
+                    <label>SQL Query</label>
+                    <textarea id="source-sql-query" rows="3" placeholder="SELECT title, content FROM documents"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('add-source-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="createDataSource()">Add Source</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create KB Modal -->
+    <div id="create-kb-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Create Knowledge Base</div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="kb-name" placeholder="My Knowledge Base">
+            </div>
+            <div class="form-group">
+                <label>Slug (URL-friendly)</label>
+                <input type="text" id="kb-slug" placeholder="my-kb">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="kb-description" rows="3" placeholder="Optional description..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('create-kb-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="createKb()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Upload Document</div>
+            <div id="upload-area" class="upload-area">
+                <div class="empty-state-icon">📄</div>
+                <p>Drag & drop files here or click to browse</p>
+                <input type="file" id="file-input" multiple style="display:none">
+            </div>
+            <div id="upload-list" class="mt-20"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('upload-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <script>
+    const LOCALE_KEY = 'minikb.locale';
+    const I18N = {
+      'zh-CN': {
+        'subtitle': '面向 Agent 的知识库平台',
+        'lang.label': '语言',
+        'tab.kb': '知识库',
+        'tab.documents': '文档',
+        'tab.sources': '数据源',
+        'tab.chunks': '分片',
+        'tab.retrieval': '检索',
+        'tab.qa': '问答',
+        'tab.eval': '评测',
+        'tab.settings': '设置',
+        'kb.title': '知识库',
+        'kb.create': '+ 创建知识库',
+        'doc.title': '文档',
+        'doc.upload': '上传',
+        'src.title': '数据源',
+        'src.add': '+ 添加数据源',
+        'chunk.title': '分片',
+        'chunk.search': '搜索分片...',
+        'ret.title': '检索试验台',
+        'ret.search': '搜索',
+        'set.title': '知识库设置',
+        'eval.title': '评测',
+        'eval.dataset': '+ 数据集',
+        'qa.title': '问答试验台',
+        'qa.placeholder': '就知识库内容提问...',
+        'qa.ask': '提问',
+        'qa.clear': '清空',
+        'select.kb': '选择知识库...',
+        'err.selectKb': '请先选择知识库',
+        'err.query': '请输入查询内容',
+        'err.nameSlug': '名称和 slug 必填',
+      },
+      en: {
+        'subtitle': 'Knowledge Base Platform for Agents',
+        'lang.label': 'Language',
+        'tab.kb': 'Knowledge Bases',
+        'tab.documents': 'Documents',
+        'tab.sources': 'Data Sources',
+        'tab.chunks': 'Chunks',
+        'tab.retrieval': 'Retrieval',
+        'tab.qa': 'QA',
+        'tab.eval': 'Eval',
+        'tab.settings': 'Settings',
+        'kb.title': 'Knowledge Bases',
+        'kb.create': '+ Create KB',
+        'doc.title': 'Documents',
+        'doc.upload': 'Upload',
+        'src.title': 'Data Sources',
+        'src.add': '+ Add Source',
+        'chunk.title': 'Chunks',
+        'chunk.search': 'Search chunks...',
+        'ret.title': 'Retrieval Playground',
+        'ret.search': 'Search',
+        'set.title': 'KB Settings',
+        'eval.title': 'Evaluation',
+        'eval.dataset': '+ Dataset',
+        'qa.title': 'QA Playground',
+        'qa.placeholder': 'Ask a question about your knowledge base...',
+        'qa.ask': 'Ask',
+        'qa.clear': 'Clear',
+        'select.kb': 'Select KB...',
+        'err.selectKb': 'Please select a KB first',
+        'err.query': 'Please enter a query',
+        'err.nameSlug': 'Name and slug are required',
+      }
+    };
+    let currentLocale = localStorage.getItem(LOCALE_KEY) || 'zh-CN';
+    if (currentLocale !== 'zh-CN' && currentLocale !== 'en') currentLocale = 'zh-CN';
+    function t(key) {
+      return (I18N[currentLocale] && I18N[currentLocale][key]) || (I18N.en && I18N.en[key]) || key;
+    }
+    function applyI18n() {
+      document.documentElement.lang = currentLocale;
+      document.title = currentLocale === 'zh-CN' ? 'minikb - 知识库平台' : 'minikb - Knowledge Base Platform';
+      const sel = document.getElementById('lang-select');
+      if (sel) sel.value = currentLocale;
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const key = el.getAttribute('data-i18n');
+        if (key) el.textContent = t(key);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (key) el.setAttribute('placeholder', t(key));
+      });
+    }
+    function setLocale(locale) {
+      currentLocale = locale;
+      localStorage.setItem(LOCALE_KEY, locale);
+      applyI18n();
+    }
+    document.addEventListener('DOMContentLoaded', applyI18n);
+    </script>
+
+<script>
+        const API_BASE = '/v1';
+        let currentKbId = null;
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.panel).classList.add('active');
+
+                if (tab.dataset.panel === 'documents') { loadKbOptions(); }
+                if (tab.dataset.panel === 'sources') { loadKbOptions(); }
+                if (tab.dataset.panel === 'chunks') { loadKbOptions(); }
+                if (tab.dataset.panel === 'retrieval') { loadKbOptions(); }
+                if (tab.dataset.panel === 'qa') { loadKbOptions(); }
+                if (tab.dataset.panel === 'eval') { loadKbOptions(); }
+                if (tab.dataset.panel === 'settings') { loadKbOptions(); }
+            });
+        });
+
+        // Sync KB selection across tabs
+        document.addEventListener('change', (e) => {
+            if (e.target.tagName === 'SELECT' && e.target.id.endsWith('-kb-select')) {
+                if (e.target.value) {
+                    _selectedKbId = e.target.value;
+                }
+            }
+        });
+
+        // Load KBs on page load
+        loadKbs();
+
+        async function loadKbs() {
+            const resp = await fetch(`${API_BASE}/kb`);
+            const data = await resp.json();
+            const container = document.getElementById('kb-items');
+
+            if (data.items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📚</div>
+                        <p>No knowledge bases yet. Create one to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.items.map(kb => `
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">${kb.name}</span>
+                        <span class="badge badge-info">${kb.kind}</span>
+                    </div>
+                    <div class="card-meta">
+                        <span>Slug: ${kb.slug}</span> ·
+                        <span>Documents: ${kb.stats?.documents || 0}</span> ·
+                        <span>Chunks: ${kb.stats?.chunks || 0}</span>
+                    </div>
+                    ${kb.description ? `<p class="mt-10 text-muted">${kb.description}</p>` : ''}
+                    <div class="mt-10">
+                        <button class="btn btn-secondary text-sm" onclick="selectKb('${kb.id}', '${kb.name}')">Manage Docs</button>
+                        <button class="btn btn-danger text-sm" onclick="deleteKb('${kb.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        let _selectedKbId = null;
+
+        async function loadKbOptions(autoSelect = true) {
+            const resp = await fetch(`${API_BASE}/kb`);
+            const data = await resp.json();
+            const items = data.items || [];
+            const options = items.map(kb =>
+                `<option value="${kb.id}"${_selectedKbId === kb.id ? ' selected' : ''}>${kb.name}</option>`
+            ).join('');
+
+            const selects = ['doc-kb-select', 'chunk-kb-select', 'retrieval-kb-select',
+                             'qa-kb-select', 'source-kb-select', 'eval-kb-select', 'settings-kb-select'];
+
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const oldVal = el.value;
+                    el.innerHTML = '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
+                    if (oldVal && items.some(kb => kb.id === oldVal)) {
+                        el.value = oldVal;
+                    } else if (autoSelect && items.length === 1) {
+                        el.value = items[0].id;
+                        _selectedKbId = items[0].id;
+                    } else if (_selectedKbId && items.some(kb => kb.id === _selectedKbId)) {
+                        el.value = _selectedKbId;
+                    }
+                }
+            });
+
+            // If only one KB, persist the selection
+            if (items.length === 1) {
+                _selectedKbId = items[0].id;
+            }
+        }
+
+        function showCreateKbModal() {
+            document.getElementById('create-kb-modal').classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        async function createKb() {
+            const name = document.getElementById('kb-name').value;
+            const slug = document.getElementById('kb-slug').value;
+            const description = document.getElementById('kb-description').value;
+
+            if (!name || !slug) {
+                alert(t('err.nameSlug'));
+                return;
+            }
+
+            const resp = await fetch(`${API_BASE}/kb`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, slug, description }),
+            });
+
+            if (resp.ok) {
+                closeModal('create-kb-modal');
+                document.getElementById('kb-name').value = '';
+                document.getElementById('kb-slug').value = '';
+                document.getElementById('kb-description').value = '';
+                loadKbs();
+            } else {
+                const err = await resp.json();
+                alert(err.detail || 'Failed to create KB');
+            }
+        }
+
+        async function deleteKb(id) {
+            if (!confirm('Are you sure you want to delete this KB?')) return;
+
+            const resp = await fetch(`${API_BASE}/kb/${id}`, { method: 'DELETE' });
+            if (resp.ok) {
+                loadKbs();
+            }
+        }
+
+        function selectKb(id, name) {
+            currentKbId = id;
+            document.querySelector('[data-panel="documents"]').click();
+            document.getElementById('doc-kb-select').value = id;
+            document.getElementById('doc-kb-name').textContent = `- ${name}`;
+            loadDocuments();
+        }
+
+        async function loadDocuments() {
+            const kbId = document.getElementById('doc-kb-select').value;
+            const container = document.getElementById('doc-items');
+
+            if (!kbId) {
+                container.innerHTML = '<div class="empty-state">Select a knowledge base</div>';
+                return;
+            }
+
+            const resp = await fetch(`${API_BASE}/kb/${kbId}/documents`);
+            const data = await resp.json();
+
+            if (data.items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📄</div>
+                        <p>No documents yet. Upload some files to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.items.map(doc => `
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">${doc.title}</span>
+                        <span class="badge ${getStatusBadge(doc.status)}">${doc.status}</span>
+                    </div>
+                    <div class="card-meta">
+                        <span>${doc.mime || 'unknown'}</span> ·
+                        <span>${formatBytes(doc.size_bytes)}</span> ·
+                        <span>${new Date(doc.created_at).toLocaleString()}</span>
+                    </div>
+                    ${doc.error ? `<p class="mt-10 text-sm" style="color: #dc3545;">${doc.error}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'ready': 'badge-success',
+                'pending': 'badge-warning',
+                'parsing': 'badge-info',
+                'chunking': 'badge-info',
+                'embedding': 'badge-info',
+                'failed': 'badge-danger',
+            };
+            return badges[status] || 'badge-info';
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showUploadModal() {
+            if (!currentKbId && !document.getElementById('doc-kb-select').value) {
+                alert(t('err.selectKb'));
+                return;
+            }
+            currentKbId = document.getElementById('doc-kb-select').value;
+            document.getElementById('upload-modal').classList.add('active');
+        }
+
+        // Upload handling
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+        async function handleFiles(files) {
+            const list = document.getElementById('upload-list');
+
+            for (const file of files) {
+                const item = document.createElement('div');
+                item.className = 'card';
+                item.innerHTML = `
+                    <div class="flex flex-between flex-center">
+                        <span>${file.name}</span>
+                        <span class="badge badge-info">Uploading...</span>
+                    </div>
+                `;
+                list.appendChild(item);
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const resp = await fetch(`${API_BASE}/kb/${currentKbId}/documents`, {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (resp.ok) {
+                        item.querySelector('.badge').className = 'badge badge-success';
+                        item.querySelector('.badge').textContent = 'Uploaded';
+                    } else {
+                        const err = await resp.json();
+                        item.querySelector('.badge').className = 'badge badge-danger';
+                        item.querySelector('.badge').textContent = 'Failed';
+                    }
+                } catch (e) {
+                    item.querySelector('.badge').className = 'badge badge-danger';
+                    item.querySelector('.badge').textContent = 'Error';
+                }
+            }
+
+            loadDocuments();
+        }
+
+        async function doRetrieval() {
+            const kbId = document.getElementById('retrieval-kb-select').value;
+            const mode = document.getElementById('retrieval-mode').value;
+            const query = document.getElementById('retrieval-query').value;
+            const container = document.getElementById('retrieval-results');
+
+            if (!kbId) {
+                alert(t('err.selectKb'));
+                return;
+            }
+            if (!query) {
+                alert(t('err.query'));
+                return;
+            }
+
+            // Build request body
+            const body = { query, mode, top_k: 10 };
+
+            // Add rerank config if enabled
+            const rerankEnabled = document.getElementById('retrieval-rerank').checked;
+            if (rerankEnabled) {
+                body.rerank = {
+                    enabled: true,
+                    provider: document.getElementById('rerank-provider').value,
+                    top_n: parseInt(document.getElementById('rerank-top-n').value) || 5,
+                };
+            }
+
+            container.innerHTML = '<p class="text-muted">Searching...</p>';
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/retrieve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                const data = await resp.json();
+
+                if (data.hits.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No results found</p></div>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <p class="text-muted text-sm mb-10">
+                        Found ${data.total} results in ${data.elapsed_ms.toFixed(0)}ms (${data.mode})
+                    </p>
+                    ${data.hits.map(hit => `
+                        <div class="result-item">
+                            <span class="result-score">${(hit.score * 100).toFixed(1)}%</span>
+                            <strong>${hit.doc_title || 'Untitled'}</strong>
+                            <div class="result-text">${escapeHtml(hit.text)}</div>
+                        </div>
+                    `).join('')}
+                `;
+            } catch (e) {
+                container.innerHTML = `<p style="color: #dc3545;">Error: ${e.message}</p>`;
+            }
+        }
+
+        function toggleRerankOptions() {
+            const enabled = document.getElementById('retrieval-rerank').checked;
+            document.getElementById('rerank-provider').style.display = enabled ? '' : 'none';
+            document.getElementById('rerank-top-n').style.display = enabled ? '' : 'none';
+            document.getElementById('rerank-topn-label').style.display = enabled ? '' : 'none';
+        }
+
+        // ─── Settings Panel ──────────────────────────────────────────────────
+
+        async function loadSettings() {
+            const kbId = document.getElementById('settings-kb-select').value;
+            const container = document.getElementById('settings-content');
+
+            if (!kbId) { container.innerHTML = '<div class="empty-state">Select a KB</div>'; return; }
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`);
+                const kb = await resp.json();
+
+                container.innerHTML = `
+                    <div class="card mb-20">
+                        <h3 class="mb-10">General</h3>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="setting-name" value="${escapeHtml(kb.name)}">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="setting-desc" rows="2">${escapeHtml(kb.description || '')}</textarea>
+                        </div>
+                        <div class="flex flex-gap">
+                            <div class="form-group" style="flex:1">
+                                <label>Kind</label>
+                                <select id="setting-kind">
+                                    <option value="general" ${kb.kind === 'general' ? 'selected' : ''}>General</option>
+                                    <option value="code_sandbox" ${kb.kind === 'code_sandbox' ? 'selected' : ''}>Code Sandbox</option>
+                                    <option value="wiki" ${kb.kind === 'wiki' ? 'selected' : ''}>Wiki</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1">
+                                <label>Visibility</label>
+                                <select id="setting-visibility">
+                                    <option value="private" ${kb.visibility === 'private' ? 'selected' : ''}>Private</option>
+                                    <option value="org" ${kb.visibility === 'org' ? 'selected' : ''}>Organization</option>
+                                    <option value="public" ${kb.visibility === 'public' ? 'selected' : ''}>Public</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveSettings('${kbId}')">Save</button>
+                    </div>
+
+                    <div class="card mb-20">
+                        <h3 class="mb-10">Chunking</h3>
+                        <div class="form-group">
+                            <label>Strategy</label>
+                            <select id="setting-chunker">
+                                <option value="recursive">Recursive</option>
+                                <option value="heading">By Heading</option>
+                                <option value="semantic">Semantic</option>
+                                <option value="code_aware">Code Aware</option>
+                                <option value="sliding_window">Sliding Window</option>
+                            </select>
+                        </div>
+                        <p class="text-sm text-muted">Current: ${kb.meta?.chunker_strategy || 'recursive (default)'}</p>
+                    </div>
+
+                    <div class="card mb-20">
+                        <h3 class="mb-10">Stats</h3>
+                        <div class="flex flex-gap" style="gap: 20px;">
+                            <div><strong>${kb.stats?.documents || 0}</strong> documents</div>
+                            <div><strong>${kb.stats?.chunks || 0}</strong> chunks</div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="border-color: #dc3545;">
+                        <h3 class="mb-10" style="color: #dc3545;">Danger Zone</h3>
+                        <button class="btn btn-secondary text-sm" onclick="reindexKb('${kbId}')">Re-index All Chunks</button>
+                        <button class="btn btn-danger text-sm" onclick="deleteKbSettings('${kbId}')">Delete Knowledge Base</button>
+                    </div>
+                `;
+
+                // Set chunker strategy
+                const strategy = kb.meta?.chunker_strategy || 'recursive';
+                document.getElementById('setting-chunker').value = strategy;
+
+            } catch (e) {
+                container.innerHTML = `<p style="color: #dc3545;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function saveSettings(kbId) {
+            const body = {
+                name: document.getElementById('setting-name').value,
+                description: document.getElementById('setting-desc').value,
+                kind: document.getElementById('setting-kind').value,
+                visibility: document.getElementById('setting-visibility').value,
+                chunker_strategy: document.getElementById('setting-chunker').value,
+            };
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                if (resp.ok) { alert('Settings saved'); loadKbs(); }
+                else { const err = await resp.json(); alert(err.detail || 'Failed'); }
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        async function reindexKb(kbId) {
+            if (!confirm('Re-index all chunks? This may take a while.')) return;
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/settings/reindex`, { method: 'POST' });
+                const data = await resp.json();
+                alert(data.message);
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        async function deleteKbSettings(kbId) {
+            if (!confirm('PERMANENTLY delete this KB and all its data?')) return;
+            if (!confirm('Are you REALLY sure? This cannot be undone.')) return;
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`, { method: 'DELETE' });
+                if (resp.ok) { alert('KB deleted'); loadKbs(); }
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        // ─── Eval Panel ─────────────────────────────────────────────────────
+
+        let currentDatasetId = null;
+
+        async function loadEvalDatasets() {
+            const kbId = document.getElementById('eval-kb-select').value;
+            const container = document.getElementById('eval-datasets');
+
+            if (!kbId) { container.innerHTML = '<div class="empty-state">Select a KB</div>'; return; }
+
+            try {
+                const [dsResp, runsResp] = await Promise.all([
+                    fetch(`${API_BASE}/kb/${kbId}/eval/datasets`),
+                    fetch(`${API_BASE}/kb/${kbId}/eval/runs`),
+                ]);
+                const datasets = await dsResp.json();
+                const runs = await runsResp.json();
+
+                let html = '';
+                if (datasets.length === 0) {
+                    html = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>No evaluation datasets yet.</p></div>';
+                } else {
+                    html = '<h3 class="mb-10">Datasets</h3>' + datasets.map(ds => `
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">${escapeHtml(ds.name)}</span>
+                                <span class="badge badge-info">${ds.size} items</span>
+                            </div>
+                            <div class="card-meta">Created: ${new Date(ds.created_at).toLocaleString()}</div>
+                            <div class="mt-10">
+                                <button class="btn btn-secondary text-sm" onclick="runEval('${kbId}', '${ds.id}')">Run Eval</button>
+                                <button class="btn btn-danger text-sm" onclick="deleteDataset('${kbId}', '${ds.id}')">Delete</button>
+                            </div>
+                        </div>`).join('');
+                }
+                container.innerHTML = html;
+
+                // Render runs
+                const runsContainer = document.getElementById('eval-runs');
+                if (runs.length === 0) {
+                    runsContainer.innerHTML = '';
+                } else {
+                    runsContainer.innerHTML = '<h3 class="mb-10">Recent Runs</h3>' + runs.map(run => {
+                        const m = run.metrics || {};
+                        return `<div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Run ${run.id.substring(0, 8)}</span>
+                                <span class="badge ${run.status === 'completed' ? 'badge-success' : 'badge-warning'}">${run.status}</span>
+                            </div>
+                            <div class="card-meta">
+                                Mode: ${run.params?.mode || '?'} · Top-K: ${run.params?.top_k || '?'} ·
+                                ${new Date(run.created_at).toLocaleString()}
+                            </div>
+                            <div class="flex flex-gap mt-10" style="flex-wrap: wrap;">
+                                ${m['recall@5'] !== undefined ? `<span class="badge badge-info">R@5: ${(m['recall@5']*100).toFixed(1)}%</span>` : ''}
+                                ${m['mrr'] !== undefined ? `<span class="badge badge-info">MRR: ${m['mrr'].toFixed(3)}</span>` : ''}
+                                ${m['ndcg@5'] !== undefined ? `<span class="badge badge-info">nDCG@5: ${m['ndcg@5'].toFixed(3)}</span>` : ''}
+                                ${m['avg_latency_ms'] !== undefined ? `<span class="badge badge-info">Latency: ${m['avg_latency_ms']}ms</span>` : ''}
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
+            } catch (e) {
+                container.innerHTML = `<p style="color: #dc3545;">Error: ${e.message}</p>`;
+            }
+        }
+
+        function showCreateDatasetModal() {
+            const name = prompt('Dataset name:');
+            if (!name) return;
+            const kbId = document.getElementById('eval-kb-select').value;
+            if (!kbId) { alert(t('err.selectKb')); return; }
+
+            fetch(`${API_BASE}/kb/${kbId}/eval/datasets`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name }),
+            }).then(resp => {
+                if (resp.ok) loadEvalDatasets();
+                else alert('Failed to create dataset');
+            });
+        }
+
+        async function runEval(kbId, datasetId) {
+            if (!confirm('Run evaluation? This may take a while.')) return;
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/eval/runs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dataset_id: datasetId, mode: 'vector', top_k: 10 }),
+                });
+                if (resp.ok) {
+                    alert('Evaluation complete!');
+                    loadEvalDatasets();
+                } else {
+                    const err = await resp.json();
+                    alert(err.detail || 'Evaluation failed');
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function deleteDataset(kbId, dsId) {
+            if (!confirm('Delete this dataset?')) return;
+            await fetch(`${API_BASE}/kb/${kbId}/eval/datasets/${dsId}`, { method: 'DELETE' });
+            loadEvalDatasets();
+        }
+
+        // ─── Data Sources Panel ──────────────────────────────────────────────
+
+        async function loadDataSources() {
+            const kbId = document.getElementById('source-kb-select').value;
+            const container = document.getElementById('source-items');
+
+            if (!kbId) {
+                container.innerHTML = '<div class="empty-state">Select a KB to manage data sources</div>';
+                return;
+            }
+
+            // Update loadKbOptions to include source-kb-select
+            if (!document.getElementById('source-kb-select').options.length) {
+                const resp = await fetch(`${API_BASE}/kb`);
+                const data = await resp.json();
+                const options = data.items.map(kb => `<option value="${kb.id}">${kb.name}</option>`).join('');
+                document.getElementById('source-kb-select').innerHTML = '<option value="" data-i18n="select.kb">选择知识库...</option>' + options;
+            }
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources`);
+                const data = await resp.json();
+
+                if (data.items.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔌</div>
+                            <p>No data sources yet. Add a URL, Git repo, or SQL database.</p>
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = data.items.map(ds => {
+                    const statusBadge = ds.status === 'idle' ? 'badge-success' :
+                                       ds.status === 'syncing' ? 'badge-warning' : 'badge-danger';
+                    return `
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">${escapeHtml(ds.name)}</span>
+                                <span class="badge ${statusBadge}">${ds.status}</span>
+                            </div>
+                            <div class="card-meta">
+                                <span>Type: ${ds.kind}</span> ·
+                                <span>Last sync: ${ds.last_sync_at ? new Date(ds.last_sync_at).toLocaleString() : 'never'}</span> ·
+                                <span>Records: ${ds.stats?.total_synced || 0}</span>
+                            </div>
+                            ${ds.last_error ? `<p class="text-sm mt-10" style="color: #dc3545;">Error: ${escapeHtml(ds.last_error)}</p>` : ''}
+                            <div class="mt-10">
+                                <button class="btn btn-secondary text-sm" onclick="syncDataSource('${kbId}', '${ds.id}')">Sync</button>
+                                <button class="btn btn-secondary text-sm" onclick="probeDataSource('${kbId}', '${ds.id}')">Test</button>
+                                <button class="btn btn-danger text-sm" onclick="deleteDataSource('${kbId}', '${ds.id}')">Delete</button>
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch (e) {
+                container.innerHTML = `<p style="color: #dc3545;">Error: ${e.message}</p>`;
+            }
+        }
+
+        function showAddSourceModal() {
+            const kbId = document.getElementById('source-kb-select').value;
+            if (!kbId) { alert(t('err.selectKb')); return; }
+            document.getElementById('add-source-modal').classList.add('active');
+            updateSourceForm();
+        }
+
+        function updateSourceForm() {
+            const kind = document.getElementById('source-kind').value;
+            document.getElementById('source-url-fields').style.display = kind === 'url' ? '' : 'none';
+            document.getElementById('source-git-fields').style.display = kind === 'git' ? '' : 'none';
+            document.getElementById('source-sql-fields').style.display = kind === 'sql' ? '' : 'none';
+        }
+
+        async function createDataSource() {
+            const kbId = document.getElementById('source-kb-select').value;
+            const kind = document.getElementById('source-kind').value;
+            const name = document.getElementById('source-name').value;
+            if (!name) { alert('Name is required'); return; }
+
+            let config = {};
+            if (kind === 'url') {
+                const urls = document.getElementById('source-urls').value.split('\n').map(u => u.trim()).filter(Boolean);
+                if (!urls.length) { alert('At least one URL is required'); return; }
+                config = { urls };
+            } else if (kind === 'git') {
+                const repoUrl = document.getElementById('source-repo-url').value.trim();
+                if (!repoUrl) { alert('Repository URL is required'); return; }
+                config = { repo_url: repoUrl };
+                const branch = document.getElementById('source-branch').value.trim();
+                if (branch) config.branch = branch;
+            } else if (kind === 'sql') {
+                const connStr = document.getElementById('source-conn-string').value.trim();
+                const query = document.getElementById('source-sql-query').value.trim();
+                if (!connStr || !query) { alert('Connection string and query are required'); return; }
+                config = { connection_string: connStr, query };
+            }
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ kind, name, config }),
+                });
+                if (resp.ok) {
+                    closeModal('add-source-modal');
+                    document.getElementById('source-name').value = '';
+                    loadDataSources();
+                } else {
+                    const err = await resp.json();
+                    alert(err.detail || 'Failed to create data source');
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function syncDataSource(kbId, dsId) {
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}/sync`, { method: 'POST' });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    alert(data.message);
+                    setTimeout(loadDataSources, 2000);
+                } else {
+                    const err = await resp.json();
+                    alert(err.detail || 'Sync failed');
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function probeDataSource(kbId, dsId) {
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}/probe`, { method: 'POST' });
+                const data = await resp.json();
+                alert(`${data.status}: ${data.message}`);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function deleteDataSource(kbId, dsId) {
+            if (!confirm('Delete this data source?')) return;
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}`, { method: 'DELETE' });
+                if (resp.ok) loadDataSources();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // ─── Chunks Panel ────────────────────────────────────────────────────
+
+        let chunkPage = 0;
+        const chunkPageSize = 50;
+
+        async function loadChunks() {
+            const kbId = document.getElementById('chunk-kb-select').value;
+            const docId = document.getElementById('chunk-doc-select').value;
+            const search = document.getElementById('chunk-search').value;
+            const container = document.getElementById('chunk-items');
+            const statsContainer = document.getElementById('chunk-stats');
+
+            if (!kbId) {
+                container.innerHTML = '<div class="empty-state">Select a knowledge base</div>';
+                statsContainer.innerHTML = '';
+                return;
+            }
+
+            // Load stats
+            try {
+                const statsResp = await fetch(`${API_BASE}/kb/${kbId}/chunks/stats`);
+                if (statsResp.ok) {
+                    const stats = await statsResp.json();
+                    statsContainer.innerHTML = `
+                        <div class="flex flex-gap" style="gap: 20px;">
+                            <div class="card" style="flex: 1; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 600;">${stats.total_chunks}</div>
+                                <div class="text-sm text-muted">Total Chunks</div>
+                            </div>
+                            <div class="card" style="flex: 1; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 600;">${stats.total_tokens?.toLocaleString() || 0}</div>
+                                <div class="text-sm text-muted">Total Tokens</div>
+                            </div>
+                            <div class="card" style="flex: 1; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 600;">${stats.avg_chunk_chars || 0}</div>
+                                <div class="text-sm text-muted">Avg Chars/Chunk</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (e) { /* ignore stats errors */ }
+
+            // Load documents for filter dropdown
+            try {
+                const docsResp = await fetch(`${API_BASE}/kb/${kbId}/documents`);
+                if (docsResp.ok) {
+                    const docsData = await docsResp.json();
+                    const docOptions = docsData.items.map(d =>
+                        `<option value="${d.id}" ${d.id === docId ? 'selected' : ''}>${d.title}</option>`
+                    ).join('');
+                    document.getElementById('chunk-doc-select').innerHTML =
+                        '<option value="">All documents</option>' + docOptions;
+                }
+            } catch (e) { /* ignore */ }
+
+            // Load chunks
+            const params = new URLSearchParams({
+                limit: chunkPageSize.toString(),
+                offset: (chunkPage * chunkPageSize).toString(),
+            });
+            if (docId) params.set('document_id', docId);
+            if (search) params.set('search', search);
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/chunks?${params}`);
+                const data = await resp.json();
+
+                if (data.items.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🧩</div>
+                            <p>${search ? 'No chunks match your search' : 'No chunks yet. Upload and process documents first.'}</p>
+                        </div>
+                    `;
+                    document.getElementById('chunk-pagination').innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = data.items.map((chunk, i) => {
+                    const headingPath = chunk.meta?.heading_path || chunk.meta?.enriched_heading_path;
+                    const headingHtml = headingPath
+                        ? `<div class="text-sm text-muted mb-10" style="color: #1a73e8;">📍 ${escapeHtml(Array.isArray(headingPath) ? headingPath.join(' > ') : headingPath)}</div>`
+                        : '';
+
+                    return `
+                        <div class="card" style="cursor: pointer;" onclick="toggleChunkDetail('chunk-${chunk.id}')">
+                            <div class="card-header">
+                                <span class="card-title">Chunk #${chunk.seq + 1}</span>
+                                <span class="badge badge-info">${chunk.tokens || '?'} tokens</span>
+                            </div>
+                            ${headingHtml}
+                            <div class="result-text" style="max-height: ${document.getElementById('chunk-' + chunk.id + '-expanded') ? 'none' : '100px'};">${highlightSearch(escapeHtml(chunk.text), search)}</div>
+                            <div id="chunk-${chunk.id}-expanded" style="display: none;">
+                                <div class="mt-10 text-sm text-muted">
+                                    <strong>ID:</strong> ${chunk.id}<br>
+                                    <strong>Document:</strong> ${chunk.document_id}<br>
+                                    ${chunk.meta?.language ? `<strong>Language:</strong> ${chunk.meta.language}<br>` : ''}
+                                    ${chunk.content_hash ? `<strong>Hash:</strong> ${chunk.content_hash}` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Pagination
+                const totalPages = Math.ceil(data.total / chunkPageSize);
+                const pagContainer = document.getElementById('chunk-pagination');
+                if (totalPages > 1) {
+                    pagContainer.innerHTML = `
+                        <button class="btn btn-secondary text-sm" onclick="chunkPageChange(-1)" ${chunkPage === 0 ? 'disabled' : ''}>← Prev</button>
+                        <span class="text-sm text-muted">Page ${chunkPage + 1} of ${totalPages} (${data.total} chunks)</span>
+                        <button class="btn btn-secondary text-sm" onclick="chunkPageChange(1)" ${chunkPage >= totalPages - 1 ? 'disabled' : ''}>Next →</button>
+                    `;
+                } else {
+                    pagContainer.innerHTML = `<span class="text-sm text-muted">${data.total} chunks</span>`;
+                }
+            } catch (e) {
+                container.innerHTML = `<p style="color: #dc3545;">Error loading chunks: ${e.message}</p>`;
+            }
+        }
+
+        function chunkPageChange(delta) {
+            chunkPage = Math.max(0, chunkPage + delta);
+            loadChunks();
+        }
+
+        function toggleChunkDetail(id) {
+            const el = document.getElementById(id + '-expanded');
+            if (el) {
+                el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        function highlightSearch(text, query) {
+            if (!query) return text;
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<mark style="background: #fff3cd; padding: 1px 2px;">$1</mark>');
+        }
+
+        let _debounceTimers = {};
+        function debounce(fn, delay) {
+            return function(...args) {
+                const key = fn.name || 'default';
+                clearTimeout(_debounceTimers[key]);
+                _debounceTimers[key] = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        // ─── QA Panel ────────────────────────────────────────────────────────
+
+        let lastQALogId = null;
+
+        async function doQA() {
+            const kbId = document.getElementById('qa-kb-select').value;
+            const mode = document.getElementById('qa-mode').value;
+            const topK = parseInt(document.getElementById('qa-top-k').value) || 6;
+            const query = document.getElementById('qa-query').value;
+            const container = document.getElementById('qa-results');
+
+            if (!kbId) { alert(t('err.selectKb')); return; }
+            if (!query) { alert('Please enter a question'); return; }
+
+            container.innerHTML = '<div class="card"><p class="text-muted">Thinking...</p></div>';
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/qa`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        mode,
+                        top_k: topK,
+                        stream: false,
+                    }),
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    container.innerHTML = `<div class="card" style="color: #dc3545;">Error: ${err.detail || 'Unknown error'}</div>`;
+                    return;
+                }
+
+                const data = await resp.json();
+
+                // Render answer
+                let faithClass = 'low';
+                let faithScore = data.faithfulness_score || 0;
+                if (faithScore >= 0.7) faithClass = 'high';
+                else if (faithScore >= 0.4) faithClass = 'medium';
+
+                let html = `
+                    <div class="qa-answer">
+                        <pre>${escapeHtml(data.answer)}</pre>
+                        <div class="qa-meta">
+                            <span>Model: ${data.model || 'unknown'}</span> ·
+                            <span>Retrieved: ${data.retrieval_hits} chunks</span> ·
+                            <span>Time: ${data.elapsed_ms.toFixed(0)}ms</span> ·
+                            <span class="qa-faithfulness ${faithClass}">Faithfulness: ${(faithScore * 100).toFixed(0)}%</span>
+                        </div>
+                `;
+
+                // Render citations
+                if (data.citations && data.citations.length > 0) {
+                    html += '<div class="qa-citations"><strong>Citations:</strong><br>';
+                    for (const cite of data.citations) {
+                        html += `<span class="qa-citation" title="${escapeHtml(cite.text_snippet || '')}" onclick="alert('${escapeHtml((cite.text_snippet || '').replace(/'/g, "\\'")).substring(0, 200)}')">[${cite.index}] ${escapeHtml(cite.doc_title || 'Untitled')}</span> `;
+                    }
+                    html += '</div>';
+                }
+
+                html += `
+                        <div class="qa-feedback">
+                            <button onclick="submitFeedback('${kbId}', 'up')" id="fb-up">👍 Helpful</button>
+                            <button onclick="submitFeedback('${kbId}', 'down')" id="fb-down">👎 Not helpful</button>
+                        </div>
+                    </div>
+                `;
+
+                // Also show retrieval hits
+                html += '<h3 class="mt-20 mb-10">Retrieved Chunks</h3>';
+                // The QA endpoint doesn't return hits directly, but we can note the count
+                html += `<p class="text-muted text-sm">${data.retrieval_hits} chunks were retrieved and used as context.</p>`;
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                container.innerHTML = `<div class="card" style="color: #dc3545;">Error: ${e.message}</div>`;
+            }
+        }
+
+        async function submitFeedback(kbId, feedback) {
+            // Update UI
+            document.getElementById('fb-up').className = feedback === 'up' ? 'active-up' : '';
+            document.getElementById('fb-down').className = feedback === 'down' ? 'active-down' : '';
+
+            // Note: In a real implementation, we'd save the QA log ID from the response
+            // and call the feedback endpoint. For now, just show the selection.
+        }
+
+        function clearQA() {
+            document.getElementById('qa-query').value = '';
+            document.getElementById('qa-results').innerHTML = '';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
