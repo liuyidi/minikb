@@ -9,6 +9,7 @@ from minikb.api.routes.knowledge_bases import router as kb_router
 from minikb.api.routes.members import router as members_router
 from minikb.api.routes.qa import router as qa_router
 from minikb.api.routes.retrieval import router as retrieval_router
+from minikb.api.routes.settings import router as settings_router
 
 __all__ = [
     "kb_router",
@@ -21,4 +22,5 @@ __all__ = [
     "data_sources_router",
     "members_router",
     "eval_router",
+    "settings_router",
 ]

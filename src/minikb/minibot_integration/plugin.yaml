@@ -1,0 +1,22 @@
+name: knowledge-base
+display_name: 知识库
+description: 连接 minikb 平台，让 agent 检索企业知识库
+version: 0.1.0
+enabled_by_default: false
+
+user_config:
+  - name: minikb_base_url
+    label: minikb 地址
+    type: string
+    default: "http://localhost:8080"
+  - name: minikb_api_key
+    label: API Key
+    type: secret
+
+tools:
+  - kb_list
+  - kb_search
+  - kb_answer
+
+slash_commands: []
+mcp_servers: []

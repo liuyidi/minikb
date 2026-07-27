@@ -304,6 +304,7 @@
             <div class="tab" data-panel="retrieval">Retrieval</div>
             <div class="tab" data-panel="qa">QA</div>
             <div class="tab" data-panel="eval">Eval</div>
+            <div class="tab" data-panel="settings">Settings</div>
         </div>
 
         <!-- Knowledge Bases Panel -->
@@ -392,6 +393,17 @@
             </div>
             <button class="btn btn-primary" onclick="doRetrieval()">Search</button>
             <div id="retrieval-results" class="search-results"></div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="settings" class="panel">
+            <h2 class="mb-20">KB Settings</h2>
+            <div class="flex flex-gap mb-20">
+                <select id="settings-kb-select" onchange="loadSettings()" style="width: 250px;">
+                    <option value="">Select KB...</option>
+                </select>
+            </div>
+            <div id="settings-content"></div>
         </div>
 
         <!-- Eval Panel -->
@@ -540,6 +552,7 @@
                 if (tab.dataset.panel === 'retrieval') loadKbOptions();
                 if (tab.dataset.panel === 'qa') loadKbOptions();
                 if (tab.dataset.panel === 'eval') loadKbOptions();
+                if (tab.dataset.panel === 'settings') loadKbOptions();
             });
         });
 
@@ -599,6 +612,8 @@
             document.getElementById('source-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
             document.getElementById('eval-kb-select').innerHTML =
+                '<option value="">Select KB...</option>' + options;
+            document.getElementById('settings-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
         }
 
@@ -847,6 +862,127 @@
             document.getElementById('rerank-provider').style.display = enabled ? '' : 'none';
             document.getElementById('rerank-top-n').style.display = enabled ? '' : 'none';
             document.getElementById('rerank-topn-label').style.display = enabled ? '' : 'none';
+        }
+
+        // ─── Settings Panel ──────────────────────────────────────────────────
+
+        async function loadSettings() {
+            const kbId = document.getElementById('settings-kb-select').value;
+            const container = document.getElementById('settings-content');
+
+            if (!kbId) { container.innerHTML = '<div class="empty-state">Select a KB</div>'; return; }
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`);
+                const kb = await resp.json();
+
+                container.innerHTML = `
+                    <div class="card mb-20">
+                        <h3 class="mb-10">General</h3>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="setting-name" value="${escapeHtml(kb.name)}">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="setting-desc" rows="2">${escapeHtml(kb.description || '')}</textarea>
+                        </div>
+                        <div class="flex flex-gap">
+                            <div class="form-group" style="flex:1">
+                                <label>Kind</label>
+                                <select id="setting-kind">
+                                    <option value="general" ${kb.kind === 'general' ? 'selected' : ''}>General</option>
+                                    <option value="code_sandbox" ${kb.kind === 'code_sandbox' ? 'selected' : ''}>Code Sandbox</option>
+                                    <option value="wiki" ${kb.kind === 'wiki' ? 'selected' : ''}>Wiki</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1">
+                                <label>Visibility</label>
+                                <select id="setting-visibility">
+                                    <option value="private" ${kb.visibility === 'private' ? 'selected' : ''}>Private</option>
+                                    <option value="org" ${kb.visibility === 'org' ? 'selected' : ''}>Organization</option>
+                                    <option value="public" ${kb.visibility === 'public' ? 'selected' : ''}>Public</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveSettings('${kbId}')">Save</button>
+                    </div>
+
+                    <div class="card mb-20">
+                        <h3 class="mb-10">Chunking</h3>
+                        <div class="form-group">
+                            <label>Strategy</label>
+                            <select id="setting-chunker">
+                                <option value="recursive">Recursive</option>
+                                <option value="heading">By Heading</option>
+                                <option value="semantic">Semantic</option>
+                                <option value="code_aware">Code Aware</option>
+                                <option value="sliding_window">Sliding Window</option>
+                            </select>
+                        </div>
+                        <p class="text-sm text-muted">Current: ${kb.meta?.chunker_strategy || 'recursive (default)'}</p>
+                    </div>
+
+                    <div class="card mb-20">
+                        <h3 class="mb-10">Stats</h3>
+                        <div class="flex flex-gap" style="gap: 20px;">
+                            <div><strong>${kb.stats?.documents || 0}</strong> documents</div>
+                            <div><strong>${kb.stats?.chunks || 0}</strong> chunks</div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="border-color: #dc3545;">
+                        <h3 class="mb-10" style="color: #dc3545;">Danger Zone</h3>
+                        <button class="btn btn-secondary text-sm" onclick="reindexKb('${kbId}')">Re-index All Chunks</button>
+                        <button class="btn btn-danger text-sm" onclick="deleteKbSettings('${kbId}')">Delete Knowledge Base</button>
+                    </div>
+                `;
+
+                // Set chunker strategy
+                const strategy = kb.meta?.chunker_strategy || 'recursive';
+                document.getElementById('setting-chunker').value = strategy;
+
+            } catch (e) {
+                container.innerHTML = `<p style="color: #dc3545;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function saveSettings(kbId) {
+            const body = {
+                name: document.getElementById('setting-name').value,
+                description: document.getElementById('setting-desc').value,
+                kind: document.getElementById('setting-kind').value,
+                visibility: document.getElementById('setting-visibility').value,
+                chunker_strategy: document.getElementById('setting-chunker').value,
+            };
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                if (resp.ok) { alert('Settings saved'); loadKbs(); }
+                else { const err = await resp.json(); alert(err.detail || 'Failed'); }
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        async function reindexKb(kbId) {
+            if (!confirm('Re-index all chunks? This may take a while.')) return;
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/settings/reindex`, { method: 'POST' });
+                const data = await resp.json();
+                alert(data.message);
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        async function deleteKbSettings(kbId) {
+            if (!confirm('PERMANENTLY delete this KB and all its data?')) return;
+            if (!confirm('Are you REALLY sure? This cannot be undone.')) return;
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`, { method: 'DELETE' });
+                if (resp.ok) { alert('KB deleted'); loadKbs(); }
+            } catch (e) { alert('Error: ' + e.message); }
         }
 
         // ─── Eval Panel ─────────────────────────────────────────────────────
