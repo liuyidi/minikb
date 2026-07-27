@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>minikb</title>
+    <title>minikb - 知识库平台</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -262,47 +262,48 @@
     <nav class="sidebar">
         <div class="sidebar-brand">
             <h1>📚 minikb</h1>
-            <p>Knowledge Base Platform</p>
+            <p data-i18n="subtitle">面向 Agent 的知识库平台</p>
         </div>
 
-        <div class="nav-section">Home</div>
+        <div class="nav-section" data-i18n="nav.home">首页</div>
         <div class="nav-item active" data-page="dashboard">
-            <span class="icon">🏠</span> Dashboard
+            <span class="icon">🏠</span> <span data-i18n="tab.dashboard">控制面板</span>
         </div>
 
-        <div class="nav-section">Content</div>
+        <div class="nav-section" data-i18n="nav.content">内容</div>
         <div class="nav-item" data-page="kb-list">
-            <span class="icon">📚</span> Knowledge Bases
+            <span class="icon">📚</span> <span data-i18n="tab.kb">知识库</span>
         </div>
         <div class="nav-item" data-page="documents">
-            <span class="icon">📄</span> Documents
+            <span class="icon">📄</span> <span data-i18n="tab.documents">文档</span>
         </div>
         <div class="nav-item" data-page="sources">
-            <span class="icon">🔌</span> Data Sources
+            <span class="icon">🔌</span> <span data-i18n="tab.sources">数据源</span>
         </div>
         <div class="nav-item" data-page="chunks">
-            <span class="icon">🧩</span> Chunks
+            <span class="icon">🧩</span> <span data-i18n="tab.chunks">分片</span>
         </div>
 
-        <div class="nav-section">Intelligence</div>
+        <div class="nav-section" data-i18n="nav.intel">智能</div>
         <div class="nav-item" data-page="retrieval">
-            <span class="icon">🔍</span> Retrieval
+            <span class="icon">🔍</span> <span data-i18n="tab.retrieval">检索</span>
         </div>
         <div class="nav-item" data-page="qa">
-            <span class="icon">💬</span> QA
+            <span class="icon">💬</span> <span data-i18n="tab.qa">问答</span>
         </div>
         <div class="nav-item" data-page="eval">
-            <span class="icon">📊</span> Evaluation
+            <span class="icon">📊</span> <span data-i18n="tab.eval">评测</span>
         </div>
 
-        <div class="nav-section">System</div>
+        <div class="nav-section" data-i18n="nav.system">系统</div>
         <div class="nav-item" data-page="settings">
-            <span class="icon">⚙️</span> Settings
+            <span class="icon">⚙️</span> <span data-i18n="tab.settings">设置</span>
         </div>
 
         <div class="sidebar-footer">
-            <select id="lang-select" onchange="setLocale(this.value)">
-                <option value="zh">中文</option>
+            <label for="lang-select" class="text-sm text-muted" data-i18n="lang.label" style="display:block;margin-bottom:6px;">语言</label>
+            <select id="lang-select" aria-label="Language" onchange="setLocale(this.value)">
+                <option value="zh-CN">简体中文</option>
                 <option value="en">English</option>
             </select>
         </div>
@@ -314,30 +315,30 @@
         <!-- Dashboard Page -->
         <div id="page-dashboard" class="page active">
             <div class="page-header">
-                <h2 data-i18n="dash.title">Dashboard</h2>
-                <p data-i18n="dash.subtitle">Overview of your knowledge bases</p>
+                <h2 data-i18n="dash.title">控制面板</h2>
+                <p data-i18n="dash.subtitle">知识库概览</p>
             </div>
 
             <div class="stats-grid" id="dash-stats">
                 <div class="stat-card highlight">
                     <div class="stat-value" id="stat-kbs">-</div>
-                    <div class="stat-label" data-i18n="stat.kbs">Knowledge Bases</div>
+                    <div class="stat-label" data-i18n="stat.kbs">知识库</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="stat-docs">-</div>
-                    <div class="stat-label" data-i18n="stat.docs">Documents</div>
+                    <div class="stat-label" data-i18n="stat.docs">文档</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="stat-chunks">-</div>
-                    <div class="stat-label" data-i18n="stat.chunks">Chunks</div>
+                    <div class="stat-label" data-i18n="stat.chunks">分片</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="stat-sources">-</div>
-                    <div class="stat-label" data-i18n="stat.sources">Data Sources</div>
+                    <div class="stat-label" data-i18n="stat.sources">数据源</div>
                 </div>
             </div>
 
-            <h3 class="mb-10" data-i18n="dash.recent">Recent Activity</h3>
+            <h3 class="mb-10" data-i18n="dash.recent">最近活动</h3>
             <div id="dash-activity"></div>
         </div>
 
@@ -345,9 +346,9 @@
         <div id="page-kb-list" class="page">
             <div class="page-header flex flex-between flex-center">
                 <div>
-                    <h2 data-i18n="kb.title">Knowledge Bases</h2>
+                    <h2 data-i18n="kb.title">知识库</h2>
                 </div>
-                <button class="btn btn-primary" onclick="showCreateKbModal()" data-i18n="kb.create">+ Create KB</button>
+                <button class="btn btn-primary" onclick="showCreateKbModal()" data-i18n="kb.create">+ 创建知识库</button>
             </div>
             <div id="kb-items"></div>
         </div>
@@ -355,13 +356,13 @@
         <!-- Documents Page -->
         <div id="page-documents" class="page">
             <div class="page-header flex flex-between flex-center">
-                <h2><span data-i18n="doc.title">Documents</span> <span id="doc-kb-name" class="text-muted text-sm"></span></h2>
+                <h2><span data-i18n="doc.title">文档</span> <span id="doc-kb-name" class="text-muted text-sm"></span></h2>
             </div>
             <div class="control-bar">
                 <select id="doc-kb-select" onchange="loadDocuments()">
-                    <option value="" data-i18n="select.kb">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
-                <button class="btn btn-primary" onclick="showUploadModal()" data-i18n="doc.upload">Upload</button>
+                <button class="btn btn-primary" onclick="showUploadModal()" data-i18n="doc.upload">上传</button>
             </div>
             <div id="doc-items"></div>
         </div>
@@ -369,13 +370,13 @@
         <!-- Data Sources Page -->
         <div id="page-sources" class="page">
             <div class="page-header">
-                <h2 data-i18n="src.title">Data Sources</h2>
+                <h2 data-i18n="src.title">数据源</h2>
             </div>
             <div class="control-bar">
                 <select id="source-kb-select" onchange="loadDataSources()" style="width: 250px;">
-                    <option value="" data-i18n="select.kb">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
-                <button class="btn btn-primary" onclick="showAddSourceModal()" data-i18n="src.add">+ Add Source</button>
+                <button class="btn btn-primary" onclick="showAddSourceModal()" data-i18n="src.add">+ 添加数据源</button>
             </div>
             <div id="source-items"></div>
         </div>
@@ -383,16 +384,16 @@
         <!-- Chunks Page -->
         <div id="page-chunks" class="page">
             <div class="page-header flex flex-between flex-center">
-                <h2><span data-i18n="chunk.title">Chunks</span> <span id="chunk-kb-name" class="text-muted text-sm"></span></h2>
+                <h2><span data-i18n="chunk.title">分片</span> <span id="chunk-kb-name" class="text-muted text-sm"></span></h2>
             </div>
             <div class="control-bar">
                 <select id="chunk-kb-select" onchange="loadChunks()">
-                    <option value="" data-i18n="select.kb">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
                 <select id="chunk-doc-select" onchange="loadChunks()">
-                    <option value="">All documents</option>
+                    <option value="" data-i18n="chunk.allDocs">全部文档</option>
                 </select>
-                <input type="text" id="chunk-search" placeholder="Search chunks..." style="width: 200px;" onkeyup="debounce(loadChunks, 300)()">
+                <input type="text" id="chunk-search" placeholder="搜索分片..." data-i18n-placeholder="chunk.search" style="width: 200px;" onkeyup="debounce(loadChunks, 300)()">
             </div>
             <div id="chunk-stats" class="mb-20"></div>
             <div id="chunk-items" style="max-height: 600px; overflow-y: auto;"></div>
@@ -402,11 +403,11 @@
         <!-- Retrieval Page -->
         <div id="page-retrieval" class="page">
             <div class="page-header">
-                <h2 data-i18n="ret.title">Retrieval Playground</h2>
+                <h2 data-i18n="ret.title">检索试验台</h2>
             </div>
             <div class="control-bar">
                 <select id="retrieval-kb-select" style="flex: 1;">
-                    <option value="" data-i18n="select.kb">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
                 <select id="retrieval-mode" style="width: 120px;">
                     <option value="vector">Vector</option>
@@ -416,31 +417,31 @@
             </div>
             <div class="control-bar" style="align-items: center;">
                 <label style="margin: 0; white-space: nowrap;">
-                    <input type="checkbox" id="retrieval-rerank" onchange="toggleRerankOptions()"> Rerank
+                    <input type="checkbox" id="retrieval-rerank" onchange="toggleRerankOptions()"> <span data-i18n="ret.rerank">重排序</span>
                 </label>
                 <select id="rerank-provider" style="width: 120px; display: none;">
                     <option value="mock">Mock</option>
                     <option value="bm25">BM25</option>
                     <option value="cohere">Cohere</option>
                 </select>
-                <label style="margin: 0; white-space: nowrap; display: none;" id="rerank-topn-label">Top N:</label>
+                <label style="margin: 0; white-space: nowrap; display: none;" id="rerank-topn-label" data-i18n="ret.topn">Top N:</label>
                 <input type="number" id="rerank-top-n" value="5" min="1" max="20" style="width: 60px; display: none; margin: 0;">
             </div>
             <div class="form-group">
-                <textarea id="retrieval-query" rows="3" placeholder="Enter your search query..." data-i18n-placeholder="ret.query"></textarea>
+                <textarea id="retrieval-query" rows="3" placeholder="输入搜索查询..." data-i18n-placeholder="ret.query"></textarea>
             </div>
-            <button class="btn btn-primary" onclick="doRetrieval()" data-i18n="ret.search">Search</button>
+            <button class="btn btn-primary" onclick="doRetrieval()" data-i18n="ret.search">搜索</button>
             <div id="retrieval-results" class="mt-20"></div>
         </div>
 
         <!-- QA Page -->
         <div id="page-qa" class="page">
             <div class="page-header">
-                <h2 data-i18n="qa.title">QA Playground</h2>
+                <h2 data-i18n="qa.title">问答试验台</h2>
             </div>
             <div class="control-bar">
                 <select id="qa-kb-select" style="flex: 1;">
-                    <option value="" data-i18n="select.kb">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
                 <select id="qa-mode" style="width: 120px;">
                     <option value="vector">Vector</option>
@@ -450,11 +451,11 @@
                 <input type="number" id="qa-top-k" value="6" min="1" max="20" style="width: 80px;" title="Top K">
             </div>
             <div class="form-group">
-                <textarea id="qa-query" rows="3" placeholder="Ask a question..." data-i18n-placeholder="qa.query"></textarea>
+                <textarea id="qa-query" rows="3" placeholder="提问..." data-i18n-placeholder="qa.query"></textarea>
             </div>
             <div class="flex flex-gap mb-20">
-                <button class="btn btn-primary" onclick="doQA()" data-i18n="qa.ask">Ask</button>
-                <button class="btn btn-secondary" onclick="clearQA()">Clear</button>
+                <button class="btn btn-primary" onclick="doQA()" data-i18n="qa.ask">提问</button>
+                <button class="btn btn-secondary" onclick="clearQA()" data-i18n="qa.clear">清空</button>
             </div>
             <div id="qa-results"></div>
         </div>
@@ -462,13 +463,13 @@
         <!-- Eval Page -->
         <div id="page-eval" class="page">
             <div class="page-header flex flex-between flex-center">
-                <h2 data-i18n="eval.title">Evaluation</h2>
+                <h2 data-i18n="eval.title">评测</h2>
             </div>
             <div class="control-bar">
                 <select id="eval-kb-select" onchange="loadEvalDatasets()" style="width: 250px;">
-                    <option value="" data-i18n="select.kb">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
-                <button class="btn btn-primary" onclick="showCreateDatasetModal()" data-i18n="eval.dataset">+ Dataset</button>
+                <button class="btn btn-primary" onclick="showCreateDatasetModal()" data-i18n="eval.dataset">+ 数据集</button>
             </div>
             <div id="eval-datasets"></div>
             <div id="eval-runs" class="mt-20"></div>
@@ -477,11 +478,11 @@
         <!-- Settings Page -->
         <div id="page-settings" class="page">
             <div class="page-header">
-                <h2 data-i18n="set.title">Knowledge Base Settings</h2>
+                <h2 data-i18n="set.title">知识库设置</h2>
             </div>
             <div class="control-bar mb-20">
                 <select id="settings-kb-select" onchange="loadSettings()" style="width: 250px;">
-                    <option value="" data-i18n="select.kb">Select KB...</option>
+                    <option value="" data-i18n="select.kb">选择知识库...</option>
                 </select>
             </div>
             <div id="settings-content"></div>
@@ -491,90 +492,90 @@
     <!-- ─── Modals ───────────────────────────────────────────── -->
     <div id="create-kb-modal" class="modal">
         <div class="modal-content">
-            <div class="modal-header" data-i18n="kb.create">Create Knowledge Base</div>
+            <div class="modal-header" data-i18n="modal.createKb">创建知识库</div>
             <div class="form-group">
-                <label>Name</label>
+                <label data-i18n="field.name">名称</label>
                 <input type="text" id="kb-name">
             </div>
             <div class="form-group">
-                <label>Slug</label>
+                <label data-i18n="field.slug">Slug</label>
                 <input type="text" id="kb-slug" placeholder="my-kb">
             </div>
             <div class="form-group">
-                <label>Description</label>
+                <label data-i18n="field.desc">描述</label>
                 <textarea id="kb-description" rows="2"></textarea>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('create-kb-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="createKb()">Create</button>
+                <button class="btn btn-secondary" onclick="closeModal('create-kb-modal')" data-i18n="btn.cancel">取消</button>
+                <button class="btn btn-primary" onclick="createKb()" data-i18n="btn.create">创建</button>
             </div>
         </div>
     </div>
 
     <div id="upload-modal" class="modal">
         <div class="modal-content">
-            <div class="modal-header" data-i18n="doc.upload">Upload Document</div>
+            <div class="modal-header" data-i18n="modal.upload">上传文档</div>
             <div id="upload-area" class="upload-area">
                 <div style="font-size:36px;opacity:0.3;">📄</div>
-                <p>Drag & drop or click to browse</p>
+                <p data-i18n="upload.hint">拖拽文件到此处，或点击选择</p>
                 <input type="file" id="file-input" multiple style="display:none">
             </div>
             <div id="upload-list" class="mt-20"></div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('upload-modal')">Close</button>
+                <button class="btn btn-secondary" onclick="closeModal('upload-modal')" data-i18n="btn.close">关闭</button>
             </div>
         </div>
     </div>
 
     <div id="add-source-modal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">Add Data Source</div>
+            <div class="modal-header" data-i18n="modal.addSource">添加数据源</div>
             <div class="form-group">
-                <label>Source Type</label>
+                <label data-i18n="field.sourceType">数据源类型</label>
                 <select id="source-kind" onchange="updateSourceForm()">
                     <option value="url">URL</option>
-                    <option value="git">Git Repository</option>
-                    <option value="sql">SQL Database</option>
-                    <option value="feishu">Feishu / Lark</option>
+                    <option value="git" data-i18n="src.kind.git">Git 仓库</option>
+                    <option value="sql" data-i18n="src.kind.sql">SQL 数据库</option>
+                    <option value="feishu" data-i18n="src.kind.feishu">飞书 / Lark</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Name</label>
+                <label data-i18n="field.name">名称</label>
                 <input type="text" id="source-name">
             </div>
             <div id="source-url-fields">
                 <div class="form-group">
-                    <label>URLs (one per line)</label>
+                    <label data-i18n="field.urls">URL（每行一个）</label>
                     <textarea id="source-urls" rows="3"></textarea>
                 </div>
             </div>
             <div id="source-git-fields" style="display:none">
                 <div class="form-group">
-                    <label>Repository URL</label>
+                    <label data-i18n="field.repo">仓库地址</label>
                     <input type="text" id="source-repo-url" placeholder="https://github.com/user/repo">
                 </div>
                 <div class="form-group">
-                    <label>Branch (optional)</label>
+                    <label data-i18n="field.branch">分支（可选）</label>
                     <input type="text" id="source-branch" placeholder="main">
                 </div>
             </div>
             <div id="source-sql-fields" style="display:none">
                 <div class="form-group">
-                    <label>Connection String</label>
+                    <label data-i18n="field.conn">连接串</label>
                     <input type="text" id="source-conn-string">
                 </div>
                 <div class="form-group">
-                    <label>SQL Query</label>
+                    <label data-i18n="field.sql">SQL 查询</label>
                     <textarea id="source-sql-query" rows="3"></textarea>
                 </div>
             </div>
             <div id="source-feishu-fields" style="display:none">
                 <div class="form-group">
-                    <label>Entry Type</label>
+                    <label data-i18n="field.entryType">入口类型</label>
                     <select id="feishu-entry-type">
-                        <option value="space">Drive Space</option>
-                        <option value="wiki">Wiki</option>
-                        <option value="docx">Single Document</option>
+                        <option value="space" data-i18n="feishu.space">云空间</option>
+                        <option value="wiki" data-i18n="feishu.wiki">知识库 Wiki</option>
+                        <option value="docx" data-i18n="feishu.docx">单篇文档</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -586,13 +587,13 @@
                     <input type="text" id="feishu-app-secret">
                 </div>
                 <div class="form-group">
-                    <label>Space ID / Wiki ID / Doc Token</label>
+                    <label data-i18n="field.feishuToken">Space ID / Wiki ID / Doc Token</label>
                     <input type="text" id="feishu-token" placeholder="ID for the selected entry type">
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('add-source-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="createDataSource()">Add Source</button>
+                <button class="btn btn-secondary" onclick="closeModal('add-source-modal')" data-i18n="btn.cancel">取消</button>
+                <button class="btn btn-primary" onclick="createDataSource()" data-i18n="btn.addSource">添加数据源</button>
             </div>
         </div>
     </div>
@@ -604,45 +605,150 @@ let chunkPage = 0;
 const chunkPageSize = 50;
 
 // ─── i18n ──────────────────────────────────────────────────────
-const i18n = {
-    zh: {
+const LOCALE_KEY = 'minikb.locale';
+const I18N = {
+    'zh-CN': {
+        'subtitle': '面向 Agent 的知识库平台',
+        'lang.label': '语言',
+        'nav.home': '首页', 'nav.content': '内容', 'nav.intel': '智能', 'nav.system': '系统',
+        'tab.dashboard': '控制面板', 'tab.kb': '知识库', 'tab.documents': '文档', 'tab.sources': '数据源',
+        'tab.chunks': '分片', 'tab.retrieval': '检索', 'tab.qa': '问答', 'tab.eval': '评测', 'tab.settings': '设置',
         'dash.title': '控制面板', 'dash.subtitle': '知识库概览', 'dash.recent': '最近活动',
+        'dash.empty': '还没有知识库，先创建一个吧！', 'dash.noActivity': '暂无最近活动',
         'stat.kbs': '知识库', 'stat.docs': '文档', 'stat.chunks': '分片', 'stat.sources': '数据源',
-        'kb.title': '知识库', 'kb.create': '+ 创建知识库',
-        'doc.title': '文档', 'doc.upload': '上传',
-        'src.title': '数据源', 'src.add': '+ 添加数据源',
-        'chunk.title': '分片', 'chunk.search': '搜索分片...',
+        'kb.title': '知识库', 'kb.create': '+ 创建知识库', 'kb.empty': '还没有知识库，先创建一个吧！',
+        'kb.manageDocs': '管理文档', 'kb.delete': '删除', 'kb.docs': '文档', 'kb.chunks': '分片',
+        'doc.title': '文档', 'doc.upload': '上传', 'doc.empty': '暂无文档，先上传一些文件吧！',
+        'doc.selectKb': '请选择知识库', 'doc.delete': '删除',
+        'src.title': '数据源', 'src.add': '+ 添加数据源', 'src.empty': '暂无数据源。',
+        'src.type': '类型', 'src.lastSync': '上次同步', 'src.never': '从未', 'src.records': '记录数',
+        'src.sync': '同步', 'src.test': '测试', 'src.delete': '删除',
+        'src.kind.git': 'Git 仓库', 'src.kind.sql': 'SQL 数据库', 'src.kind.feishu': '飞书 / Lark',
+        'chunk.title': '分片', 'chunk.search': '搜索分片...', 'chunk.allDocs': '全部文档',
+        'chunk.empty': '未找到分片', 'chunk.tokens': 'Tokens', 'chunk.avgChars': '平均字符数',
+        'chunk.prev': '← 上一页', 'chunk.next': '下一页 →', 'chunk.page': '第 {page}/{total} 页（共 {n} 个分片）',
+        'chunk.count': '{n} 个分片',
         'ret.title': '检索试验台', 'ret.query': '输入搜索查询...', 'ret.search': '搜索',
-        'qa.title': '问答试验台', 'qa.query': '提问...', 'qa.ask': '提问',
-        'eval.title': '评测', 'eval.dataset': '+ 数据集',
-        'set.title': '知识库设置',
+        'ret.rerank': '重排序', 'ret.topn': 'Top N:', 'ret.searching': '搜索中...',
+        'ret.noResults': '无结果', 'ret.results': '{n} 条结果，耗时 {ms}ms（{mode}）',
+        'qa.title': '问答试验台', 'qa.query': '提问...', 'qa.ask': '提问', 'qa.clear': '清空',
+        'qa.thinking': '思考中...', 'qa.citations': '引用：',
+        'eval.title': '评测', 'eval.dataset': '+ 数据集', 'eval.empty': '暂无数据集。',
+        'eval.datasets': '数据集', 'eval.runs': '最近运行', 'eval.run': '运行评测', 'eval.delete': '删除',
+        'eval.items': '条', 'eval.promptName': '数据集名称：',
+        'set.title': '知识库设置', 'set.general': '基本信息', 'set.chunking': '分片策略',
+        'set.stats': '统计', 'set.danger': '危险操作', 'set.save': '保存',
+        'set.reindex': '重建全部分片索引', 'set.deleteKb': '删除知识库',
+        'set.current': '当前：', 'set.documents': '文档', 'set.chunks': '分片',
         'select.kb': '选择知识库...',
+        'modal.createKb': '创建知识库', 'modal.upload': '上传文档', 'modal.addSource': '添加数据源',
+        'field.name': '名称', 'field.slug': 'Slug', 'field.desc': '描述',
+        'field.sourceType': '数据源类型', 'field.urls': 'URL（每行一个）',
+        'field.repo': '仓库地址', 'field.branch': '分支（可选）',
+        'field.conn': '连接串', 'field.sql': 'SQL 查询',
+        'field.entryType': '入口类型', 'field.feishuToken': 'Space ID / Wiki ID / Doc Token',
+        'feishu.space': '云空间', 'feishu.wiki': '知识库 Wiki', 'feishu.docx': '单篇文档',
+        'upload.hint': '拖拽文件到此处，或点击选择',
+        'upload.uploading': '上传中...', 'upload.uploaded': '已上传', 'upload.failed': '失败', 'upload.error': '错误',
+        'btn.cancel': '取消', 'btn.create': '创建', 'btn.close': '关闭', 'btn.addSource': '添加数据源',
+        'err.selectKb': '请先选择知识库', 'err.query': '请输入查询内容', 'err.name': '名称必填',
+        'err.failed': '失败', 'err.question': '请输入问题',
+        'confirm.deleteKb': '确定删除该知识库？', 'confirm.deleteDoc': '确定删除该文档？',
+        'confirm.delete': '确定删除？', 'confirm.eval': '开始评测？',
+        'confirm.reindex': '确定重建全部分片索引？',
+        'confirm.deleteKbPerm': '将永久删除该知识库？', 'confirm.deleteKbReally': '再次确认：真的要删除吗？',
+        'msg.syncStarted': '已开始同步', 'msg.saved': '已保存', 'msg.deleted': '已删除',
+        'msg.evalDone': '评测完成！', 'msg.evalName': '数据集名称：',
     },
     en: {
+        'subtitle': 'Knowledge Base Platform for Agents',
+        'lang.label': 'Language',
+        'nav.home': 'Home', 'nav.content': 'Content', 'nav.intel': 'Intelligence', 'nav.system': 'System',
+        'tab.dashboard': 'Dashboard', 'tab.kb': 'Knowledge Bases', 'tab.documents': 'Documents', 'tab.sources': 'Data Sources',
+        'tab.chunks': 'Chunks', 'tab.retrieval': 'Retrieval', 'tab.qa': 'QA', 'tab.eval': 'Evaluation', 'tab.settings': 'Settings',
         'dash.title': 'Dashboard', 'dash.subtitle': 'Overview of your knowledge bases', 'dash.recent': 'Recent Activity',
+        'dash.empty': 'No knowledge bases yet. Create one to get started!', 'dash.noActivity': 'No recent activity',
         'stat.kbs': 'Knowledge Bases', 'stat.docs': 'Documents', 'stat.chunks': 'Chunks', 'stat.sources': 'Data Sources',
-        'kb.title': 'Knowledge Bases', 'kb.create': '+ Create KB',
-        'doc.title': 'Documents', 'doc.upload': 'Upload',
-        'src.title': 'Data Sources', 'src.add': '+ Add Source',
-        'chunk.title': 'Chunks', 'chunk.search': 'Search chunks...',
+        'kb.title': 'Knowledge Bases', 'kb.create': '+ Create KB', 'kb.empty': 'No knowledge bases yet. Create one to get started!',
+        'kb.manageDocs': 'Manage Docs', 'kb.delete': 'Delete', 'kb.docs': 'Documents', 'kb.chunks': 'Chunks',
+        'doc.title': 'Documents', 'doc.upload': 'Upload', 'doc.empty': 'No documents yet. Upload some files!',
+        'doc.selectKb': 'Select a KB', 'doc.delete': 'Delete',
+        'src.title': 'Data Sources', 'src.add': '+ Add Source', 'src.empty': 'No data sources yet.',
+        'src.type': 'Type', 'src.lastSync': 'Last sync', 'src.never': 'never', 'src.records': 'Records',
+        'src.sync': 'Sync', 'src.test': 'Test', 'src.delete': 'Delete',
+        'src.kind.git': 'Git Repository', 'src.kind.sql': 'SQL Database', 'src.kind.feishu': 'Feishu / Lark',
+        'chunk.title': 'Chunks', 'chunk.search': 'Search chunks...', 'chunk.allDocs': 'All documents',
+        'chunk.empty': 'No chunks found', 'chunk.tokens': 'Tokens', 'chunk.avgChars': 'Avg chars',
+        'chunk.prev': '← Prev', 'chunk.next': 'Next →', 'chunk.page': 'Page {page}/{total} ({n} chunks)',
+        'chunk.count': '{n} chunks',
         'ret.title': 'Retrieval Playground', 'ret.query': 'Enter search query...', 'ret.search': 'Search',
-        'qa.title': 'QA Playground', 'qa.query': 'Ask a question...', 'qa.ask': 'Ask',
-        'eval.title': 'Evaluation', 'eval.dataset': '+ Dataset',
-        'set.title': 'Knowledge Base Settings',
+        'ret.rerank': 'Rerank', 'ret.topn': 'Top N:', 'ret.searching': 'Searching...',
+        'ret.noResults': 'No results', 'ret.results': '{n} results in {ms}ms ({mode})',
+        'qa.title': 'QA Playground', 'qa.query': 'Ask a question...', 'qa.ask': 'Ask', 'qa.clear': 'Clear',
+        'qa.thinking': 'Thinking...', 'qa.citations': 'Citations:',
+        'eval.title': 'Evaluation', 'eval.dataset': '+ Dataset', 'eval.empty': 'No datasets yet.',
+        'eval.datasets': 'Datasets', 'eval.runs': 'Recent Runs', 'eval.run': 'Run Eval', 'eval.delete': 'Delete',
+        'eval.items': 'items', 'eval.promptName': 'Dataset name:',
+        'set.title': 'Knowledge Base Settings', 'set.general': 'General', 'set.chunking': 'Chunking',
+        'set.stats': 'Stats', 'set.danger': 'Danger Zone', 'set.save': 'Save',
+        'set.reindex': 'Re-index All Chunks', 'set.deleteKb': 'Delete Knowledge Base',
+        'set.current': 'Current:', 'set.documents': 'documents', 'set.chunks': 'chunks',
         'select.kb': 'Select KB...',
+        'modal.createKb': 'Create Knowledge Base', 'modal.upload': 'Upload Document', 'modal.addSource': 'Add Data Source',
+        'field.name': 'Name', 'field.slug': 'Slug', 'field.desc': 'Description',
+        'field.sourceType': 'Source Type', 'field.urls': 'URLs (one per line)',
+        'field.repo': 'Repository URL', 'field.branch': 'Branch (optional)',
+        'field.conn': 'Connection String', 'field.sql': 'SQL Query',
+        'field.entryType': 'Entry Type', 'field.feishuToken': 'Space ID / Wiki ID / Doc Token',
+        'feishu.space': 'Drive Space', 'feishu.wiki': 'Wiki', 'feishu.docx': 'Single Document',
+        'upload.hint': 'Drag & drop or click to browse',
+        'upload.uploading': 'Uploading...', 'upload.uploaded': 'Uploaded', 'upload.failed': 'Failed', 'upload.error': 'Error',
+        'btn.cancel': 'Cancel', 'btn.create': 'Create', 'btn.close': 'Close', 'btn.addSource': 'Add Source',
+        'err.selectKb': 'Please select a KB first', 'err.query': 'Please enter a query', 'err.name': 'Name is required',
+        'err.failed': 'Failed', 'err.question': 'Please enter a question',
+        'confirm.deleteKb': 'Delete this KB?', 'confirm.deleteDoc': 'Delete this document?',
+        'confirm.delete': 'Delete?', 'confirm.eval': 'Run evaluation?',
+        'confirm.reindex': 'Re-index all chunks?',
+        'confirm.deleteKbPerm': 'PERMANENTLY delete this KB?', 'confirm.deleteKbReally': 'Are you REALLY sure?',
+        'msg.syncStarted': 'Sync started', 'msg.saved': 'Saved', 'msg.deleted': 'Deleted',
+        'msg.evalDone': 'Evaluation complete!', 'msg.evalName': 'Dataset name:',
     }
 };
 
-function setLocale(lang) {
-    const dict = i18n[lang] || i18n.en;
-    document.querySelectorAll('[data-i18n]').forEach(el => {
+let currentLocale = localStorage.getItem(LOCALE_KEY) || 'zh-CN';
+if (currentLocale === 'zh') currentLocale = 'zh-CN';
+if (currentLocale !== 'zh-CN' && currentLocale !== 'en') currentLocale = 'zh-CN';
+
+function t(key, vars) {
+    let s = (I18N[currentLocale] && I18N[currentLocale][key]) || (I18N.en && I18N.en[key]) || key;
+    if (vars) {
+        Object.keys(vars).forEach((k) => { s = s.replaceAll('{' + k + '}', String(vars[k])); });
+    }
+    return s;
+}
+
+function applyI18n() {
+    document.documentElement.lang = currentLocale;
+    document.title = currentLocale === 'zh-CN' ? 'minikb - 知识库平台' : 'minikb - Knowledge Base Platform';
+    const sel = document.getElementById('lang-select');
+    if (sel) sel.value = currentLocale;
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
         const key = el.getAttribute('data-i18n');
-        if (dict[key]) el.textContent = dict[key];
+        if (key) el.textContent = t(key);
     });
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
         const key = el.getAttribute('data-i18n-placeholder');
-        if (dict[key]) el.placeholder = dict[key];
+        if (key) el.setAttribute('placeholder', t(key));
     });
+}
+
+function setLocale(locale) {
+    currentLocale = locale === 'zh' ? 'zh-CN' : locale;
+    localStorage.setItem(LOCALE_KEY, currentLocale);
+    applyI18n();
+    // Refresh active dynamic panels
+    const active = document.querySelector('.nav-item.active');
+    if (active) active.click();
 }
 
 // ─── Navigation ────────────────────────────────────────────────
@@ -654,21 +760,19 @@ document.querySelectorAll('.nav-item').forEach(item => {
         const pageId = 'page-' + item.dataset.page;
         document.getElementById(pageId).classList.add('active');
 
-        // Load data for the page
         const page = item.dataset.page;
         if (page === 'dashboard') loadDashboard();
         if (page === 'kb-list') loadKbs();
-        if (page === 'documents') loadKbOptions();
-        if (page === 'sources') loadKbOptions();
-        if (page === 'chunks') loadKbOptions();
+        if (page === 'documents') { loadKbOptions(); loadDocuments(); }
+        if (page === 'sources') { loadKbOptions(); loadDataSources(); }
+        if (page === 'chunks') { loadKbOptions(); loadChunks(); }
         if (page === 'retrieval') loadKbOptions();
         if (page === 'qa') loadKbOptions();
-        if (page === 'eval') loadKbOptions();
-        if (page === 'settings') loadKbOptions();
+        if (page === 'eval') { loadKbOptions(); loadEvalDatasets(); }
+        if (page === 'settings') { loadKbOptions(); loadSettings(); }
     });
 });
 
-// Sync KB selection across pages
 document.addEventListener('change', (e) => {
     if (e.target.tagName === 'SELECT' && e.target.id.endsWith('-kb-select')) {
         if (e.target.value) _selectedKbId = e.target.value;
@@ -692,7 +796,6 @@ async function loadDashboard() {
         document.getElementById('stat-docs').textContent = totalDocs;
         document.getElementById('stat-chunks').textContent = totalChunks;
 
-        // Count data sources
         let totalSources = 0;
         for (const kb of kbs) {
             try {
@@ -703,14 +806,12 @@ async function loadDashboard() {
         }
         document.getElementById('stat-sources').textContent = totalSources;
 
-        // Recent activity
         const container = document.getElementById('dash-activity');
         if (kbs.length === 0) {
-            container.innerHTML = '<div class="card empty-state"><div class="icon"></div><p>No knowledge bases yet. Create one to get started!</p></div>';
+            container.innerHTML = `<div class="card empty-state"><div class="icon"></div><p>${t('dash.empty')}</p></div>`;
             return;
         }
 
-        // Show recent documents across all KBs
         let activityHtml = '';
         for (const kb of kbs) {
             try {
@@ -726,14 +827,12 @@ async function loadDashboard() {
                 }
             } catch {}
         }
-        container.innerHTML = activityHtml || '<div class="card empty-state"><p>No recent activity</p></div>';
+        container.innerHTML = activityHtml || `<div class="card empty-state"><p>${t('dash.noActivity')}</p></div>`;
 
-        // Auto-select KB if only one
         if (kbs.length === 1) {
             _selectedKbId = kbs[0].id;
             document.querySelectorAll('select[id$="-kb-select"]').forEach(sel => { sel.value = kbs[0].id; });
         }
-
     } catch (e) {
         console.error('Dashboard load error:', e);
     }
@@ -746,7 +845,7 @@ async function loadKbs() {
     const container = document.getElementById('kb-items');
 
     if (data.items.length === 0) {
-        container.innerHTML = '<div class="card empty-state"><div class="icon">📚</div><p>No knowledge bases yet. Create one to get started!</p></div>';
+        container.innerHTML = `<div class="card empty-state"><div class="icon">📚</div><p>${t('kb.empty')}</p></div>`;
         return;
     }
 
@@ -758,11 +857,11 @@ async function loadKbs() {
             </div>
             <div class="card-meta">
                 ${kb.description ? escapeHtml(kb.description) + ' · ' : ''}
-                Documents: ${kb.stats?.documents || 0} · Chunks: ${kb.stats?.chunks || 0}
+                ${t('kb.docs')}: ${kb.stats?.documents || 0} · ${t('kb.chunks')}: ${kb.stats?.chunks || 0}
             </div>
             <div class="mt-10 flex flex-gap">
-                <button class="btn btn-secondary btn-sm" onclick="selectKb('${kb.id}')">Manage Docs</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteKb('${kb.id}')">Delete</button>
+                <button class="btn btn-secondary btn-sm" onclick="selectKb('${kb.id}')">${t('kb.manageDocs')}</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteKb('${kb.id}')">${t('kb.delete')}</button>
             </div>
         </div>
     `).join('');
@@ -781,7 +880,7 @@ async function loadKbOptions() {
         const el = document.getElementById(id);
         if (el) {
             const oldVal = el.value;
-            el.innerHTML = '<option value="" data-i18n="select.kb">Select KB...</option>' + options;
+            el.innerHTML = `<option value="" data-i18n="select.kb">${t('select.kb')}</option>` + options;
             if (oldVal && items.some(kb => kb.id === oldVal)) el.value = oldVal;
             else if (_selectedKbId && items.some(kb => kb.id === _selectedKbId)) el.value = _selectedKbId;
             else if (items.length === 1) { el.value = items[0].id; _selectedKbId = items[0].id; }
@@ -796,14 +895,14 @@ async function createKb() {
     const name = document.getElementById('kb-name').value;
     const slug = document.getElementById('kb-slug').value || document.getElementById('kb-name').value.toLowerCase().replace(/\s+/g, '-');
     const description = document.getElementById('kb-description').value;
-    if (!name) { alert('Name is required'); return; }
+    if (!name) { alert(t('err.name')); return; }
     const resp = await fetch(`${API_BASE}/kb`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, slug, description }) });
     if (resp.ok) { closeModal('create-kb-modal'); document.getElementById('kb-name').value = ''; document.getElementById('kb-slug').value = ''; document.getElementById('kb-description').value = ''; loadKbs(); }
-    else { const err = await resp.json(); alert(err.detail || 'Failed'); }
+    else { const err = await resp.json(); alert(err.detail || t('err.failed')); }
 }
 
 async function deleteKb(id) {
-    if (!confirm('Delete this KB?')) return;
+    if (!confirm(t('confirm.deleteKb'))) return;
     const resp = await fetch(`${API_BASE}/kb/${id}`, { method: 'DELETE' });
     if (resp.ok) loadKbs();
 }
@@ -818,11 +917,11 @@ function selectKb(id) {
 async function loadDocuments() {
     const kbId = document.getElementById('doc-kb-select').value;
     const container = document.getElementById('doc-items');
-    if (!kbId) { container.innerHTML = '<div class="card empty-state"><p>Select a KB</p></div>'; return; }
+    if (!kbId) { container.innerHTML = `<div class="card empty-state"><p>${t('doc.selectKb')}</p></div>`; return; }
 
     const resp = await fetch(`${API_BASE}/kb/${kbId}/documents`);
     const data = await resp.json();
-    if (data.items.length === 0) { container.innerHTML = '<div class="card empty-state"><div class="icon">📄</div><p>No documents yet. Upload some files!</p></div>'; return; }
+    if (data.items.length === 0) { container.innerHTML = `<div class="card empty-state"><div class="icon">📄</div><p>${t('doc.empty')}</p></div>`; return; }
 
     container.innerHTML = data.items.map(doc => `
         <div class="card">
@@ -830,21 +929,21 @@ async function loadDocuments() {
                 <span class="card-title">${escapeHtml(doc.title)}</span>
                 <span class="badge ${getStatusBadge(doc.status)}">${doc.status}</span>
             </div>
-            <div class="card-meta">${doc.mime || 'unknown'} · ${formatBytes(doc.size_bytes)} · ${new Date(doc.created_at).toLocaleString()}</div>
+            <div class="card-meta">${doc.mime || 'unknown'} · ${formatBytes(doc.size_bytes)} · ${new Date(doc.created_at).toLocaleString(currentLocale)}</div>
             ${doc.error ? `<p class="mt-10 text-sm" style="color:#dc3545;">${escapeHtml(doc.error)}</p>` : ''}
-            <div class="mt-10"><button class="btn btn-danger btn-sm" onclick="deleteDoc('${kbId}','${doc.id}')">Delete</button></div>
+            <div class="mt-10"><button class="btn btn-danger btn-sm" onclick="deleteDoc('${kbId}','${doc.id}')">${t('doc.delete')}</button></div>
         </div>`).join('');
 }
 
 async function deleteDoc(kbId, docId) {
-    if (!confirm('Delete this document?')) return;
+    if (!confirm(t('confirm.deleteDoc'))) return;
     await fetch(`${API_BASE}/kb/${kbId}/documents/${docId}`, { method: 'DELETE' });
     loadDocuments();
 }
 
 function showUploadModal() {
     const kbId = document.getElementById('doc-kb-select').value;
-    if (!kbId && !_selectedKbId) { alert('Select a KB first'); return; }
+    if (!kbId && !_selectedKbId) { alert(t('err.selectKb')); return; }
     document.getElementById('upload-modal').classList.add('active');
 }
 
@@ -858,18 +957,18 @@ fileInput.addEventListener('change', e => handleFiles(e.target.files));
 
 async function handleFiles(files) {
     const kbId = document.getElementById('doc-kb-select').value || _selectedKbId;
-    if (!kbId) { alert('Select a KB first'); return; }
+    if (!kbId) { alert(t('err.selectKb')); return; }
     const list = document.getElementById('upload-list');
     for (const file of files) {
         const item = document.createElement('div'); item.className = 'card';
-        item.innerHTML = `<div class="flex flex-between flex-center"><span>${escapeHtml(file.name)}</span><span class="badge badge-info">Uploading...</span></div>`;
+        item.innerHTML = `<div class="flex flex-between flex-center"><span>${escapeHtml(file.name)}</span><span class="badge badge-info">${t('upload.uploading')}</span></div>`;
         list.appendChild(item);
         const formData = new FormData(); formData.append('file', file);
         try {
             const resp = await fetch(`${API_BASE}/kb/${kbId}/documents`, { method: 'POST', body: formData });
             item.querySelector('.badge').className = resp.ok ? 'badge badge-success' : 'badge badge-danger';
-            item.querySelector('.badge').textContent = resp.ok ? 'Uploaded' : 'Failed';
-        } catch { item.querySelector('.badge').className = 'badge badge-danger'; item.querySelector('.badge').textContent = 'Error'; }
+            item.querySelector('.badge').textContent = resp.ok ? t('upload.uploaded') : t('upload.failed');
+        } catch { item.querySelector('.badge').className = 'badge badge-danger'; item.querySelector('.badge').textContent = t('upload.error'); }
     }
     loadDocuments();
 }
@@ -881,22 +980,22 @@ function formatBytes(b) { if (!b) return '0 B'; const k=1024, sizes=['B','KB','M
 async function loadDataSources() {
     const kbId = document.getElementById('source-kb-select').value;
     const container = document.getElementById('source-items');
-    if (!kbId) { container.innerHTML = '<div class="card empty-state"><p>Select a KB</p></div>'; return; }
+    if (!kbId) { container.innerHTML = `<div class="card empty-state"><p>${t('doc.selectKb')}</p></div>`; return; }
 
     try {
         const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources`);
         const data = await resp.json();
-        if (data.items.length === 0) { container.innerHTML = '<div class="card empty-state"><div class="icon">🔌</div><p>No data sources yet.</p></div>'; return; }
+        if (data.items.length === 0) { container.innerHTML = `<div class="card empty-state"><div class="icon">🔌</div><p>${t('src.empty')}</p></div>`; return; }
         container.innerHTML = data.items.map(ds => {
             const badge = ds.status === 'idle' ? 'badge-success' : ds.status === 'syncing' ? 'badge-warning' : 'badge-danger';
-            return `<div class="card"><div class="card-header"><span class="card-title">${escapeHtml(ds.name)}</span><span class="badge ${badge}">${ds.status}</span></div><div class="card-meta">Type: ${ds.kind} · Last sync: ${ds.last_sync_at ? new Date(ds.last_sync_at).toLocaleString() : 'never'} · Records: ${ds.stats?.total_synced || 0}</div>${ds.last_error ? `<p class="text-sm mt-10" style="color:#dc3545;">Error: ${escapeHtml(ds.last_error)}</p>` : ''}<div class="mt-10 flex flex-gap"><button class="btn btn-secondary btn-sm" onclick="syncDataSource('${kbId}','${ds.id}')">Sync</button><button class="btn btn-secondary btn-sm" onclick="probeDataSource('${kbId}','${ds.id}')">Test</button><button class="btn btn-danger btn-sm" onclick="deleteDataSource('${kbId}','${ds.id}')">Delete</button></div></div>`;
+            return `<div class="card"><div class="card-header"><span class="card-title">${escapeHtml(ds.name)}</span><span class="badge ${badge}">${ds.status}</span></div><div class="card-meta">${t('src.type')}: ${ds.kind} · ${t('src.lastSync')}: ${ds.last_sync_at ? new Date(ds.last_sync_at).toLocaleString(currentLocale) : t('src.never')} · ${t('src.records')}: ${ds.stats?.total_synced || 0}</div>${ds.last_error ? `<p class="text-sm mt-10" style="color:#dc3545;">${escapeHtml(ds.last_error)}</p>` : ''}<div class="mt-10 flex flex-gap"><button class="btn btn-secondary btn-sm" onclick="syncDataSource('${kbId}','${ds.id}')">${t('src.sync')}</button><button class="btn btn-secondary btn-sm" onclick="probeDataSource('${kbId}','${ds.id}')">${t('src.test')}</button><button class="btn btn-danger btn-sm" onclick="deleteDataSource('${kbId}','${ds.id}')">${t('src.delete')}</button></div></div>`;
         }).join('');
-    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">Error: ${e.message}</p>`; }
+    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">${e.message}</p>`; }
 }
 
 function showAddSourceModal() {
     const kbId = document.getElementById('source-kb-select').value || _selectedKbId;
-    if (!kbId) { alert('Select a KB first'); return; }
+    if (!kbId) { alert(t('err.selectKb')); return; }
     document.getElementById('add-source-modal').classList.add('active');
     updateSourceForm();
 }
@@ -913,7 +1012,7 @@ async function createDataSource() {
     const kbId = document.getElementById('source-kb-select').value || _selectedKbId;
     const kind = document.getElementById('source-kind').value;
     const name = document.getElementById('source-name').value;
-    if (!name) { alert('Name required'); return; }
+    if (!name) { alert(t('err.name')); return; }
     let config = {};
     if (kind === 'url') { config = { urls: document.getElementById('source-urls').value.split('\n').map(u=>u.trim()).filter(Boolean) }; }
     else if (kind === 'git') { config = { repo_url: document.getElementById('source-repo-url').value.trim() }; const b = document.getElementById('source-branch').value.trim(); if (b) config.branch = b; }
@@ -931,12 +1030,12 @@ async function createDataSource() {
         else if (entryType === 'docx') config.doc_token = token;
     }
     const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, name, config }) });
-    if (resp.ok) { closeModal('add-source-modal'); document.getElementById('source-name').value = ''; loadDataSources(); } else { const err = await resp.json(); alert(err.detail || 'Failed'); }
+    if (resp.ok) { closeModal('add-source-modal'); document.getElementById('source-name').value = ''; loadDataSources(); } else { const err = await resp.json(); alert(err.detail || t('err.failed')); }
 }
 
-async function syncDataSource(kbId, dsId) { try { const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}/sync`, { method: 'POST' }); if (resp.ok) { alert('Sync started'); setTimeout(loadDataSources, 2000); } else { const err = await resp.json(); alert(err.detail || 'Failed'); } } catch (e) { alert('Error: '+e.message); } }
-async function probeDataSource(kbId, dsId) { try { const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}/probe`, { method: 'POST' }); const data = await resp.json(); alert(`${data.status}: ${data.message}`); } catch (e) { alert('Error: '+e.message); } }
-async function deleteDataSource(kbId, dsId) { if (!confirm('Delete?')) return; await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}`, { method: 'DELETE' }); loadDataSources(); }
+async function syncDataSource(kbId, dsId) { try { const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}/sync`, { method: 'POST' }); if (resp.ok) { alert(t('msg.syncStarted')); setTimeout(loadDataSources, 2000); } else { const err = await resp.json(); alert(err.detail || t('err.failed')); } } catch (e) { alert(e.message); } }
+async function probeDataSource(kbId, dsId) { try { const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}/probe`, { method: 'POST' }); const data = await resp.json(); alert(`${data.status}: ${data.message}`); } catch (e) { alert(e.message); } }
+async function deleteDataSource(kbId, dsId) { if (!confirm(t('confirm.delete'))) return; await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}`, { method: 'DELETE' }); loadDataSources(); }
 
 // ─── Chunks ────────────────────────────────────────────────────
 async function loadChunks() {
@@ -944,7 +1043,7 @@ async function loadChunks() {
     const docId = document.getElementById('chunk-doc-select').value;
     const search = document.getElementById('chunk-search').value;
     const container = document.getElementById('chunk-items');
-    if (!kbId) { container.innerHTML = '<div class="card empty-state"><p>Select a KB</p></div>'; return; }
+    if (!kbId) { container.innerHTML = `<div class="card empty-state"><p>${t('doc.selectKb')}</p></div>`; return; }
 
     const params = new URLSearchParams({ limit: chunkPageSize, offset: chunkPage * chunkPageSize });
     if (docId) params.set('document_id', docId);
@@ -956,20 +1055,22 @@ async function loadChunks() {
 
         if (statsResp && statsResp.ok) {
             const stats = await statsResp.json();
-            document.getElementById('chunk-stats').innerHTML = `<div class="flex flex-gap" style="gap:16px;"><div class="stat-card" style="flex:1;text-align:center;padding:12px;"><div class="stat-value" style="font-size:20px;">${stats.total_chunks}</div><div class="stat-label">Chunks</div></div><div class="stat-card" style="flex:1;text-align:center;padding:12px;"><div class="stat-value" style="font-size:20px;">${(stats.total_tokens||0).toLocaleString()}</div><div class="stat-label">Tokens</div></div><div class="stat-card" style="flex:1;text-align:center;padding:12px;"><div class="stat-value" style="font-size:20px;">${stats.avg_chunk_chars||0}</div><div class="stat-label">Avg chars</div></div></div>`;
+            document.getElementById('chunk-stats').innerHTML = `<div class="flex flex-gap" style="gap:16px;"><div class="stat-card" style="flex:1;text-align:center;padding:12px;"><div class="stat-value" style="font-size:20px;">${stats.total_chunks}</div><div class="stat-label">${t('stat.chunks')}</div></div><div class="stat-card" style="flex:1;text-align:center;padding:12px;"><div class="stat-value" style="font-size:20px;">${(stats.total_tokens||0).toLocaleString()}</div><div class="stat-label">${t('chunk.tokens')}</div></div><div class="stat-card" style="flex:1;text-align:center;padding:12px;"><div class="stat-value" style="font-size:20px;">${stats.avg_chunk_chars||0}</div><div class="stat-label">${t('chunk.avgChars')}</div></div></div>`;
         }
 
-        if (data.items.length === 0) { container.innerHTML = '<div class="card empty-state"><p>No chunks found</p></div>'; document.getElementById('chunk-pagination').innerHTML = ''; return; }
+        if (data.items.length === 0) { container.innerHTML = `<div class="card empty-state"><p>${t('chunk.empty')}</p></div>`; document.getElementById('chunk-pagination').innerHTML = ''; return; }
 
-        container.innerHTML = data.items.map((c, i) => {
+        container.innerHTML = data.items.map((c) => {
             const path = c.meta?.heading_path || c.meta?.enriched_heading_path;
             const pathHtml = path ? `<div class="text-sm text-muted mb-10" style="color:#1a56db;">📍 ${escapeHtml(Array.isArray(path)?path.join(' > '):path)}</div>` : '';
             return `<div class="card" style="cursor:pointer;" onclick="toggleChunkDetail('chunk-${c.id}')"><div class="card-header"><span class="card-title">Chunk #${c.seq+1}</span><span class="badge badge-info">${c.tokens||'?'} tok</span></div>${pathHtml}<div class="result-text" style="max-height:100px;">${highlightSearch(escapeHtml(c.text), search)}</div><div id="chunk-${c.id}-expanded" style="display:none;"><div class="mt-10 text-sm text-muted"><strong>ID:</strong> ${c.id}<br><strong>Doc:</strong> ${c.document_id}${c.meta?.language?`<br><strong>Lang:</strong> ${c.meta.language}`:''}</div></div></div>`;
         }).join('');
 
         const totalPages = Math.ceil(data.total / chunkPageSize);
-        document.getElementById('chunk-pagination').innerHTML = totalPages > 1 ? `<button class="btn btn-secondary btn-sm" onclick="chunkPageChange(-1)" ${chunkPage===0?'disabled':''}>← Prev</button><span class="text-sm text-muted">Page ${chunkPage+1}/${totalPages} (${data.total} chunks)</span><button class="btn btn-secondary btn-sm" onclick="chunkPageChange(1)" ${chunkPage>=totalPages-1?'disabled':''}>Next →</button>` : `<span class="text-sm text-muted">${data.total} chunks</span>`;
-    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">Error: ${e.message}</p>`; }
+        document.getElementById('chunk-pagination').innerHTML = totalPages > 1
+            ? `<button class="btn btn-secondary btn-sm" onclick="chunkPageChange(-1)" ${chunkPage===0?'disabled':''}>${t('chunk.prev')}</button><span class="text-sm text-muted">${t('chunk.page',{page:chunkPage+1,total:totalPages,n:data.total})}</span><button class="btn btn-secondary btn-sm" onclick="chunkPageChange(1)" ${chunkPage>=totalPages-1?'disabled':''}>${t('chunk.next')}</button>`
+            : `<span class="text-sm text-muted">${t('chunk.count',{n:data.total})}</span>`;
+    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">${e.message}</p>`; }
 }
 
 function chunkPageChange(d) { chunkPage = Math.max(0, chunkPage + d); loadChunks(); }
@@ -989,19 +1090,19 @@ async function doRetrieval() {
     const mode = document.getElementById('retrieval-mode').value;
     const query = document.getElementById('retrieval-query').value;
     const container = document.getElementById('retrieval-results');
-    if (!kbId) { alert('Select a KB'); return; }
-    if (!query) { alert('Enter a query'); return; }
+    if (!kbId) { alert(t('err.selectKb')); return; }
+    if (!query) { alert(t('err.query')); return; }
 
     const body = { query, mode, top_k: 10 };
     if (document.getElementById('retrieval-rerank').checked) body.rerank = { enabled: true, provider: document.getElementById('rerank-provider').value, top_n: parseInt(document.getElementById('rerank-top-n').value)||5 };
 
-    container.innerHTML = '<p class="text-muted">Searching...</p>';
+    container.innerHTML = `<p class="text-muted">${t('ret.searching')}</p>`;
     try {
         const resp = await fetch(`${API_BASE}/kb/${kbId}/retrieve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await resp.json();
-        if (data.hits.length === 0) { container.innerHTML = '<div class="card empty-state"><p>No results</p></div>'; return; }
-        container.innerHTML = `<p class="text-muted text-sm mb-10">${data.total} results in ${data.elapsed_ms.toFixed(0)}ms (${data.mode})</p>` + data.hits.map(h => `<div class="result-item"><span class="result-score">${(h.score*100).toFixed(1)}%</span><strong>${h.doc_title||'Untitled'}</strong><div class="result-text">${escapeHtml(h.text)}</div></div>`).join('');
-    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">Error: ${e.message}</p>`; }
+        if (data.hits.length === 0) { container.innerHTML = `<div class="card empty-state"><p>${t('ret.noResults')}</p></div>`; return; }
+        container.innerHTML = `<p class="text-muted text-sm mb-10">${t('ret.results',{n:data.total,ms:data.elapsed_ms.toFixed(0),mode:data.mode})}</p>` + data.hits.map(h => `<div class="result-item"><span class="result-score">${(h.score*100).toFixed(1)}%</span><strong>${h.doc_title||'Untitled'}</strong><div class="result-text">${escapeHtml(h.text)}</div></div>`).join('');
+    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">${e.message}</p>`; }
 }
 
 // ─── QA ────────────────────────────────────────────────────────
@@ -1011,21 +1112,21 @@ async function doQA() {
     const topK = parseInt(document.getElementById('qa-top-k').value)||6;
     const query = document.getElementById('qa-query').value;
     const container = document.getElementById('qa-results');
-    if (!kbId) { alert('Select a KB'); return; }
-    if (!query) { alert('Enter a question'); return; }
+    if (!kbId) { alert(t('err.selectKb')); return; }
+    if (!query) { alert(t('err.question')); return; }
 
-    container.innerHTML = '<div class="card"><p class="text-muted">Thinking...</p></div>';
+    container.innerHTML = `<div class="card"><p class="text-muted">${t('qa.thinking')}</p></div>`;
     try {
         const resp = await fetch(`${API_BASE}/kb/${kbId}/qa`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, mode, top_k: topK, stream: false }) });
-        if (!resp.ok) { const err = await resp.json(); container.innerHTML = `<div class="card" style="color:#dc3545;">Error: ${err.detail||'Unknown'}</div>`; return; }
+        if (!resp.ok) { const err = await resp.json(); container.innerHTML = `<div class="card" style="color:#dc3545;">${err.detail||t('err.failed')}</div>`; return; }
         const data = await resp.json();
         let faithClass = 'low', fs = data.faithfulness_score||0;
         if (fs >= 0.7) faithClass = 'high'; else if (fs >= 0.4) faithClass = 'medium';
         let html = `<div class="qa-answer"><pre>${escapeHtml(data.answer)}</pre><div class="text-sm text-muted" style="margin-top:10px;">Model: ${data.model||'?'} · Retrieved: ${data.retrieval_hits} chunks · Time: ${data.elapsed_ms.toFixed(0)}ms · <span class="badge ${faithClass==='high'?'badge-success':faithClass==='medium'?'badge-warning':'badge-danger'}">Faithfulness: ${(fs*100).toFixed(0)}%</span></div>`;
-        if (data.citations?.length) { html += '<div class="mt-10"><strong>Citations:</strong> '; for (const c of data.citations) html += `<span class="qa-citation" title="${escapeHtml((c.text_snippet||'').replace(/'/g,"\\'")).substring(0,200)}">[${c.index}] ${escapeHtml(c.doc_title||'Untitled')}</span> `; html += '</div>'; }
+        if (data.citations?.length) { html += `<div class="mt-10"><strong>${t('qa.citations')}</strong> `; for (const c of data.citations) html += `<span class="qa-citation" title="${escapeHtml((c.text_snippet||'').replace(/'/g,"\\'")).substring(0,200)}">[${c.index}] ${escapeHtml(c.doc_title||'Untitled')}</span> `; html += '</div>'; }
         html += '</div>';
         container.innerHTML = html;
-    } catch (e) { container.innerHTML = `<div class="card" style="color:#dc3545;">Error: ${e.message}</div>`; }
+    } catch (e) { container.innerHTML = `<div class="card" style="color:#dc3545;">${e.message}</div>`; }
 }
 
 function clearQA() { document.getElementById('qa-query').value = ''; document.getElementById('qa-results').innerHTML = ''; }
@@ -1034,48 +1135,58 @@ function clearQA() { document.getElementById('qa-query').value = ''; document.ge
 async function loadEvalDatasets() {
     const kbId = document.getElementById('eval-kb-select').value;
     const container = document.getElementById('eval-datasets');
-    if (!kbId) { container.innerHTML = '<div class="card empty-state"><p>Select a KB</p></div>'; return; }
+    if (!kbId) { container.innerHTML = `<div class="card empty-state"><p>${t('doc.selectKb')}</p></div>`; return; }
 
     try {
         const [dsResp, runsResp] = await Promise.all([fetch(`${API_BASE}/kb/${kbId}/eval/datasets`), fetch(`${API_BASE}/kb/${kbId}/eval/runs`)]);
         const datasets = await dsResp.json(), runs = await runsResp.json();
 
-        container.innerHTML = datasets.length === 0 ? '<div class="card empty-state"><div class="icon">📊</div><p>No datasets yet.</p></div>' : '<h3 class="mb-10">Datasets</h3>' + datasets.map(ds => `<div class="card"><div class="card-header"><span class="card-title">${escapeHtml(ds.name)}</span><span class="badge badge-info">${ds.size} items</span></div><div class="card-meta">Created: ${new Date(ds.created_at).toLocaleString()}</div><div class="mt-10 flex flex-gap"><button class="btn btn-secondary btn-sm" onclick="runEval('${kbId}','${ds.id}')">Run Eval</button><button class="btn btn-danger btn-sm" onclick="deleteDataset('${kbId}','${ds.id}')">Delete</button></div></div>`).join('');
+        container.innerHTML = datasets.length === 0
+            ? `<div class="card empty-state"><div class="icon">📊</div><p>${t('eval.empty')}</p></div>`
+            : `<h3 class="mb-10">${t('eval.datasets')}</h3>` + datasets.map(ds => `<div class="card"><div class="card-header"><span class="card-title">${escapeHtml(ds.name)}</span><span class="badge badge-info">${ds.size} ${t('eval.items')}</span></div><div class="card-meta">${new Date(ds.created_at).toLocaleString(currentLocale)}</div><div class="mt-10 flex flex-gap"><button class="btn btn-secondary btn-sm" onclick="runEval('${kbId}','${ds.id}')">${t('eval.run')}</button><button class="btn btn-danger btn-sm" onclick="deleteDataset('${kbId}','${ds.id}')">${t('eval.delete')}</button></div></div>`).join('');
 
-        document.getElementById('eval-runs').innerHTML = runs.length ? '<h3 class="mb-10">Recent Runs</h3>' + runs.map(r => { const m=r.metrics||{}; return `<div class="card"><div class="card-header"><span class="card-title">Run ${r.id.substring(0,8)}</span><span class="badge ${r.status==='completed'?'badge-success':'badge-warning'}">${r.status}</span></div><div class="card-meta">Mode: ${r.params?.mode||'?'} · Top-K: ${r.params?.top_k||'?'} · ${new Date(r.created_at).toLocaleString()}</div><div class="flex flex-gap mt-10" style="flex-wrap:wrap;">${m['recall@5']!==undefined?`<span class="badge badge-info">R@5: ${(m['recall@5']*100).toFixed(1)}%</span>`:''}${m['mrr']!==undefined?`<span class="badge badge-info">MRR: ${m['mrr'].toFixed(3)}</span>`:''}${m['ndcg@5']!==undefined?`<span class="badge badge-info">nDCG@5: ${m['ndcg@5'].toFixed(3)}</span>`:''}</div></div>`; }).join('') : '';
-    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">Error: ${e.message}</p>`; }
+        document.getElementById('eval-runs').innerHTML = runs.length
+            ? `<h3 class="mb-10">${t('eval.runs')}</h3>` + runs.map(r => { const m=r.metrics||{}; return `<div class="card"><div class="card-header"><span class="card-title">Run ${r.id.substring(0,8)}</span><span class="badge ${r.status==='completed'?'badge-success':'badge-warning'}">${r.status}</span></div><div class="card-meta">Mode: ${r.params?.mode||'?'} · Top-K: ${r.params?.top_k||'?'} · ${new Date(r.created_at).toLocaleString(currentLocale)}</div><div class="flex flex-gap mt-10" style="flex-wrap:wrap;">${m['recall@5']!==undefined?`<span class="badge badge-info">R@5: ${(m['recall@5']*100).toFixed(1)}%</span>`:''}${m['mrr']!==undefined?`<span class="badge badge-info">MRR: ${m['mrr'].toFixed(3)}</span>`:''}${m['ndcg@5']!==undefined?`<span class="badge badge-info">nDCG@5: ${m['ndcg@5'].toFixed(3)}</span>`:''}</div></div>`; }).join('')
+            : '';
+    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">${e.message}</p>`; }
 }
 
-function showCreateDatasetModal() { const name = prompt('Dataset name:'); if (!name) return; const kbId = document.getElementById('eval-kb-select').value || _selectedKbId; if (!kbId) { alert('Select a KB first'); return; } fetch(`${API_BASE}/kb/${kbId}/eval/datasets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) }).then(r => { if (r.ok) loadEvalDatasets(); else alert('Failed'); }); }
-async function runEval(kbId, dsId) { if (!confirm('Run evaluation?')) return; try { const resp = await fetch(`${API_BASE}/kb/${kbId}/eval/runs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dataset_id: dsId, mode: 'vector', top_k: 10 }) }); if (resp.ok) { alert('Evaluation complete!'); loadEvalDatasets(); } else { const err = await resp.json(); alert(err.detail||'Failed'); } } catch (e) { alert('Error: '+e.message); } }
-async function deleteDataset(kbId, dsId) { if (!confirm('Delete?')) return; await fetch(`${API_BASE}/kb/${kbId}/eval/datasets/${dsId}`, { method: 'DELETE' }); loadEvalDatasets(); }
+function showCreateDatasetModal() {
+    const name = prompt(t('eval.promptName'));
+    if (!name) return;
+    const kbId = document.getElementById('eval-kb-select').value || _selectedKbId;
+    if (!kbId) { alert(t('err.selectKb')); return; }
+    fetch(`${API_BASE}/kb/${kbId}/eval/datasets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) }).then(r => { if (r.ok) loadEvalDatasets(); else alert(t('err.failed')); });
+}
+async function runEval(kbId, dsId) { if (!confirm(t('confirm.eval'))) return; try { const resp = await fetch(`${API_BASE}/kb/${kbId}/eval/runs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dataset_id: dsId, mode: 'vector', top_k: 10 }) }); if (resp.ok) { alert(t('msg.evalDone')); loadEvalDatasets(); } else { const err = await resp.json(); alert(err.detail||t('err.failed')); } } catch (e) { alert(e.message); } }
+async function deleteDataset(kbId, dsId) { if (!confirm(t('confirm.delete'))) return; await fetch(`${API_BASE}/kb/${kbId}/eval/datasets/${dsId}`, { method: 'DELETE' }); loadEvalDatasets(); }
 
 // ─── Settings ──────────────────────────────────────────────────
 async function loadSettings() {
     const kbId = document.getElementById('settings-kb-select').value;
     const container = document.getElementById('settings-content');
-    if (!kbId) { container.innerHTML = '<div class="card empty-state"><p>Select a KB</p></div>'; return; }
+    if (!kbId) { container.innerHTML = `<div class="card empty-state"><p>${t('doc.selectKb')}</p></div>`; return; }
 
     try {
         const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`);
         const kb = await resp.json();
         container.innerHTML = `
-            <div class="card mb-20"><h3 class="mb-10">General</h3>
-                <div class="form-group"><label>Name</label><input type="text" id="setting-name" value="${escapeHtml(kb.name)}"></div>
-                <div class="form-group"><label>Description</label><textarea id="setting-desc" rows="2">${escapeHtml(kb.description||'')}</textarea></div>
+            <div class="card mb-20"><h3 class="mb-10">${t('set.general')}</h3>
+                <div class="form-group"><label>${t('field.name')}</label><input type="text" id="setting-name" value="${escapeHtml(kb.name)}"></div>
+                <div class="form-group"><label>${t('field.desc')}</label><textarea id="setting-desc" rows="2">${escapeHtml(kb.description||'')}</textarea></div>
                 <div class="flex flex-gap"><div class="form-group" style="flex:1"><label>Kind</label><select id="setting-kind"><option value="general" ${kb.kind==='general'?'selected':''}>General</option><option value="code_sandbox" ${kb.kind==='code_sandbox'?'selected':''}>Code Sandbox</option><option value="wiki" ${kb.kind==='wiki'?'selected':''}>Wiki</option></select></div><div class="form-group" style="flex:1"><label>Visibility</label><select id="setting-visibility"><option value="private" ${kb.visibility==='private'?'selected':''}>Private</option><option value="org" ${kb.visibility==='org'?'selected':''}>Organization</option><option value="public" ${kb.visibility==='public'?'selected':''}>Public</option></select></div></div>
-                <button class="btn btn-primary" onclick="saveSettings('${kbId}')">Save</button>
+                <button class="btn btn-primary" onclick="saveSettings('${kbId}')">${t('set.save')}</button>
             </div>
-            <div class="card mb-20"><h3 class="mb-10">Chunking</h3><div class="form-group"><label>Strategy</label><select id="setting-chunker"><option value="recursive">Recursive</option><option value="heading">By Heading</option><option value="semantic">Semantic</option><option value="code_aware">Code Aware</option><option value="sliding_window">Sliding Window</option></select></div><p class="text-sm text-muted">Current: ${kb.meta?.chunker_strategy||'recursive (default)'}</p></div>
-            <div class="card mb-20"><h3 class="mb-10">Stats</h3><div class="flex flex-gap" style="gap:20px;"><div><strong>${kb.stats?.documents||0}</strong> documents</div><div><strong>${kb.stats?.chunks||0}</strong> chunks</div></div></div>
-            <div class="card" style="border:1px solid #dc3545;"><h3 class="mb-10" style="color:#dc3545;">Danger Zone</h3><button class="btn btn-secondary btn-sm" onclick="reindexKb('${kbId}')">Re-index All Chunks</button> <button class="btn btn-danger btn-sm" onclick="deleteKbSettings('${kbId}')">Delete Knowledge Base</button></div>`;
+            <div class="card mb-20"><h3 class="mb-10">${t('set.chunking')}</h3><div class="form-group"><label>Strategy</label><select id="setting-chunker"><option value="recursive">Recursive</option><option value="heading">By Heading</option><option value="semantic">Semantic</option><option value="code_aware">Code Aware</option><option value="sliding_window">Sliding Window</option></select></div><p class="text-sm text-muted">${t('set.current')} ${kb.meta?.chunker_strategy||'recursive (default)'}</p></div>
+            <div class="card mb-20"><h3 class="mb-10">${t('set.stats')}</h3><div class="flex flex-gap" style="gap:20px;"><div><strong>${kb.stats?.documents||0}</strong> ${t('set.documents')}</div><div><strong>${kb.stats?.chunks||0}</strong> ${t('set.chunks')}</div></div></div>
+            <div class="card" style="border:1px solid #dc3545;"><h3 class="mb-10" style="color:#dc3545;">${t('set.danger')}</h3><button class="btn btn-secondary btn-sm" onclick="reindexKb('${kbId}')">${t('set.reindex')}</button> <button class="btn btn-danger btn-sm" onclick="deleteKbSettings('${kbId}')">${t('set.deleteKb')}</button></div>`;
         document.getElementById('setting-chunker').value = kb.meta?.chunker_strategy || 'recursive';
-    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">Error: ${e.message}</p>`; }
+    } catch (e) { container.innerHTML = `<p style="color:#dc3545;">${e.message}</p>`; }
 }
 
-async function saveSettings(kbId) { const body = { name: document.getElementById('setting-name').value, description: document.getElementById('setting-desc').value, kind: document.getElementById('setting-kind').value, visibility: document.getElementById('setting-visibility').value, chunker_strategy: document.getElementById('setting-chunker').value }; try { const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); if (resp.ok) { alert('Saved'); loadKbs(); } else { const err = await resp.json(); alert(err.detail||'Failed'); } } catch (e) { alert('Error: '+e.message); } }
-async function reindexKb(kbId) { if (!confirm('Re-index all chunks?')) return; try { const resp = await fetch(`${API_BASE}/kb/${kbId}/settings/reindex`, { method: 'POST' }); const data = await resp.json(); alert(data.message); } catch (e) { alert('Error: '+e.message); } }
-async function deleteKbSettings(kbId) { if (!confirm('PERMANENTLY delete this KB?')) return; if (!confirm('Are you REALLY sure?')) return; try { const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`, { method: 'DELETE' }); if (resp.ok) { alert('Deleted'); loadKbs(); document.querySelector('[data-page="kb-list"]').click(); } } catch (e) { alert('Error: '+e.message); } }
+async function saveSettings(kbId) { const body = { name: document.getElementById('setting-name').value, description: document.getElementById('setting-desc').value, kind: document.getElementById('setting-kind').value, visibility: document.getElementById('setting-visibility').value, chunker_strategy: document.getElementById('setting-chunker').value }; try { const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); if (resp.ok) { alert(t('msg.saved')); loadKbs(); } else { const err = await resp.json(); alert(err.detail||t('err.failed')); } } catch (e) { alert(e.message); } }
+async function reindexKb(kbId) { if (!confirm(t('confirm.reindex'))) return; try { const resp = await fetch(`${API_BASE}/kb/${kbId}/settings/reindex`, { method: 'POST' }); const data = await resp.json(); alert(data.message); } catch (e) { alert(e.message); } }
+async function deleteKbSettings(kbId) { if (!confirm(t('confirm.deleteKbPerm'))) return; if (!confirm(t('confirm.deleteKbReally'))) return; try { const resp = await fetch(`${API_BASE}/kb/${kbId}/settings`, { method: 'DELETE' }); if (resp.ok) { alert(t('msg.deleted')); loadKbs(); document.querySelector('[data-page="kb-list"]').click(); } } catch (e) { alert(e.message); } }
 
 // ─── Utils ─────────────────────────────────────────────────────
 let _debounceTimers = {};
@@ -1083,6 +1194,7 @@ function debounce(fn, delay) { return function(...args) { const key = fn.name||'
 function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
 // ─── Init ──────────────────────────────────────────────────────
+applyI18n();
 loadDashboard();
 </script>
 </body>
