@@ -93,6 +93,21 @@ class JobKind:
     DELETE = "delete"
 
 
+class DataSourceKind:
+    UPLOAD = "upload"
+    URL = "url"
+    GIT = "git"
+    SQL = "sql"
+    FEISHU = "feishu"
+    CUSTOM = "custom"
+
+
+class DataSourceStatus:
+    IDLE = "idle"
+    SYNCING = "syncing"
+    ERROR = "error"
+
+
 # ─── Models ──────────────────────────────────────────────────────────────────
 
 
@@ -280,4 +295,30 @@ class IngestJob(Base):
         Index("ix_ingest_jobs_kb_id", "kb_id"),
         Index("ix_ingest_jobs_document_id", "document_id"),
         Index("ix_ingest_jobs_status", "status"),
+    )
+
+
+class DataSource(Base):
+    __tablename__ = "data_sources"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID_PK, primary_key=True, default=new_uuid)
+    kb_id: Mapped[uuid.UUID] = mapped_column(UUID_PK, ForeignKey("knowledge_bases.id", ondelete="CASCADE"), nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False, default=DataSourceKind.UPLOAD)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default=DataSourceStatus.IDLE)
+    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cron: Mapped[str | None] = mapped_column(String(100))
+    state: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    stats: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    knowledge_base: Mapped[KnowledgeBase] = relationship()
+
+    __table_args__ = (
+        Index("ix_data_sources_kb_id", "kb_id"),
     )

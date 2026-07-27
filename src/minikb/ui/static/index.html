@@ -299,6 +299,7 @@
         <div class="tabs">
             <div class="tab active" data-panel="kb-list">Knowledge Bases</div>
             <div class="tab" data-panel="documents">Documents</div>
+            <div class="tab" data-panel="sources">Data Sources</div>
             <div class="tab" data-panel="chunks">Chunks</div>
             <div class="tab" data-panel="retrieval">Retrieval</div>
             <div class="tab" data-panel="qa">QA</div>
@@ -325,6 +326,20 @@
                 </div>
             </div>
             <div id="doc-items"></div>
+        </div>
+
+        <!-- Data Sources Panel -->
+        <div id="sources" class="panel">
+            <div class="flex flex-between flex-center mb-20">
+                <h2>Data Sources</h2>
+                <div class="flex flex-gap">
+                    <select id="source-kb-select" onchange="loadDataSources()" style="width: 200px;">
+                        <option value="">Select KB...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showAddSourceModal()">+ Add Source</button>
+                </div>
+            </div>
+            <div id="source-items"></div>
         </div>
 
         <!-- Chunks Panel -->
@@ -403,6 +418,55 @@
         </div>
     </div>
 
+    <!-- Add Data Source Modal -->
+    <div id="add-source-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Add Data Source</div>
+            <div class="form-group">
+                <label>Source Type</label>
+                <select id="source-kind" onchange="updateSourceForm()">
+                    <option value="url">URL</option>
+                    <option value="git">Git Repository</option>
+                    <option value="sql">SQL Database</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="source-name" placeholder="My Data Source">
+            </div>
+            <div id="source-url-fields">
+                <div class="form-group">
+                    <label>URLs (one per line)</label>
+                    <textarea id="source-urls" rows="3" placeholder="https://example.com/page1"></textarea>
+                </div>
+            </div>
+            <div id="source-git-fields" style="display:none">
+                <div class="form-group">
+                    <label>Repository URL</label>
+                    <input type="text" id="source-repo-url" placeholder="https://github.com/user/repo">
+                </div>
+                <div class="form-group">
+                    <label>Branch (optional)</label>
+                    <input type="text" id="source-branch" placeholder="main">
+                </div>
+            </div>
+            <div id="source-sql-fields" style="display:none">
+                <div class="form-group">
+                    <label>Connection String</label>
+                    <input type="text" id="source-conn-string" placeholder="postgresql://user:pass@host/db">
+                </div>
+                <div class="form-group">
+                    <label>SQL Query</label>
+                    <textarea id="source-sql-query" rows="3" placeholder="SELECT title, content FROM documents"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('add-source-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="createDataSource()">Add Source</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Create KB Modal -->
     <div id="create-kb-modal" class="modal">
         <div class="modal-content">
@@ -455,6 +519,7 @@
                 document.getElementById(tab.dataset.panel).classList.add('active');
 
                 if (tab.dataset.panel === 'documents') loadKbOptions();
+                if (tab.dataset.panel === 'sources') { loadKbOptions(); }
                 if (tab.dataset.panel === 'chunks') { loadKbOptions(); }
                 if (tab.dataset.panel === 'retrieval') loadKbOptions();
                 if (tab.dataset.panel === 'qa') loadKbOptions();
@@ -513,6 +578,8 @@
             document.getElementById('retrieval-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
             document.getElementById('qa-kb-select').innerHTML =
+                '<option value="">Select KB...</option>' + options;
+            document.getElementById('source-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
         }
 
@@ -761,6 +828,158 @@
             document.getElementById('rerank-provider').style.display = enabled ? '' : 'none';
             document.getElementById('rerank-top-n').style.display = enabled ? '' : 'none';
             document.getElementById('rerank-topn-label').style.display = enabled ? '' : 'none';
+        }
+
+        // ─── Data Sources Panel ──────────────────────────────────────────────
+
+        async function loadDataSources() {
+            const kbId = document.getElementById('source-kb-select').value;
+            const container = document.getElementById('source-items');
+
+            if (!kbId) {
+                container.innerHTML = '<div class="empty-state">Select a KB to manage data sources</div>';
+                return;
+            }
+
+            // Update loadKbOptions to include source-kb-select
+            if (!document.getElementById('source-kb-select').options.length) {
+                const resp = await fetch(`${API_BASE}/kb`);
+                const data = await resp.json();
+                const options = data.items.map(kb => `<option value="${kb.id}">${kb.name}</option>`).join('');
+                document.getElementById('source-kb-select').innerHTML = '<option value="">Select KB...</option>' + options;
+            }
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources`);
+                const data = await resp.json();
+
+                if (data.items.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔌</div>
+                            <p>No data sources yet. Add a URL, Git repo, or SQL database.</p>
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = data.items.map(ds => {
+                    const statusBadge = ds.status === 'idle' ? 'badge-success' :
+                                       ds.status === 'syncing' ? 'badge-warning' : 'badge-danger';
+                    return `
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">${escapeHtml(ds.name)}</span>
+                                <span class="badge ${statusBadge}">${ds.status}</span>
+                            </div>
+                            <div class="card-meta">
+                                <span>Type: ${ds.kind}</span> ·
+                                <span>Last sync: ${ds.last_sync_at ? new Date(ds.last_sync_at).toLocaleString() : 'never'}</span> ·
+                                <span>Records: ${ds.stats?.total_synced || 0}</span>
+                            </div>
+                            ${ds.last_error ? `<p class="text-sm mt-10" style="color: #dc3545;">Error: ${escapeHtml(ds.last_error)}</p>` : ''}
+                            <div class="mt-10">
+                                <button class="btn btn-secondary text-sm" onclick="syncDataSource('${kbId}', '${ds.id}')">Sync</button>
+                                <button class="btn btn-secondary text-sm" onclick="probeDataSource('${kbId}', '${ds.id}')">Test</button>
+                                <button class="btn btn-danger text-sm" onclick="deleteDataSource('${kbId}', '${ds.id}')">Delete</button>
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch (e) {
+                container.innerHTML = `<p style="color: #dc3545;">Error: ${e.message}</p>`;
+            }
+        }
+
+        function showAddSourceModal() {
+            const kbId = document.getElementById('source-kb-select').value;
+            if (!kbId) { alert('Please select a KB first'); return; }
+            document.getElementById('add-source-modal').classList.add('active');
+            updateSourceForm();
+        }
+
+        function updateSourceForm() {
+            const kind = document.getElementById('source-kind').value;
+            document.getElementById('source-url-fields').style.display = kind === 'url' ? '' : 'none';
+            document.getElementById('source-git-fields').style.display = kind === 'git' ? '' : 'none';
+            document.getElementById('source-sql-fields').style.display = kind === 'sql' ? '' : 'none';
+        }
+
+        async function createDataSource() {
+            const kbId = document.getElementById('source-kb-select').value;
+            const kind = document.getElementById('source-kind').value;
+            const name = document.getElementById('source-name').value;
+            if (!name) { alert('Name is required'); return; }
+
+            let config = {};
+            if (kind === 'url') {
+                const urls = document.getElementById('source-urls').value.split('\n').map(u => u.trim()).filter(Boolean);
+                if (!urls.length) { alert('At least one URL is required'); return; }
+                config = { urls };
+            } else if (kind === 'git') {
+                const repoUrl = document.getElementById('source-repo-url').value.trim();
+                if (!repoUrl) { alert('Repository URL is required'); return; }
+                config = { repo_url: repoUrl };
+                const branch = document.getElementById('source-branch').value.trim();
+                if (branch) config.branch = branch;
+            } else if (kind === 'sql') {
+                const connStr = document.getElementById('source-conn-string').value.trim();
+                const query = document.getElementById('source-sql-query').value.trim();
+                if (!connStr || !query) { alert('Connection string and query are required'); return; }
+                config = { connection_string: connStr, query };
+            }
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ kind, name, config }),
+                });
+                if (resp.ok) {
+                    closeModal('add-source-modal');
+                    document.getElementById('source-name').value = '';
+                    loadDataSources();
+                } else {
+                    const err = await resp.json();
+                    alert(err.detail || 'Failed to create data source');
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function syncDataSource(kbId, dsId) {
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}/sync`, { method: 'POST' });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    alert(data.message);
+                    setTimeout(loadDataSources, 2000);
+                } else {
+                    const err = await resp.json();
+                    alert(err.detail || 'Sync failed');
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function probeDataSource(kbId, dsId) {
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}/probe`, { method: 'POST' });
+                const data = await resp.json();
+                alert(`${data.status}: ${data.message}`);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function deleteDataSource(kbId, dsId) {
+            if (!confirm('Delete this data source?')) return;
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/data-sources/${dsId}`, { method: 'DELETE' });
+                if (resp.ok) loadDataSources();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
         }
 
         // ─── Chunks Panel ────────────────────────────────────────────────────

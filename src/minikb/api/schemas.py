@@ -184,3 +184,50 @@ class RetrieveResponse(BaseModel):
     total: int
     mode: str
     elapsed_ms: float
+
+
+# ─── Data Source ─────────────────────────────────────────────────────────────
+
+
+class DataSourceCreate(BaseModel):
+    kind: str = Field(..., pattern=r"^(url|git|sql|feishu|custom)$")
+    name: str = Field(..., min_length=1, max_length=200)
+    config: dict[str, Any] = Field(default_factory=dict)
+    cron: str | None = None
+
+
+class DataSourceUpdate(BaseModel):
+    name: str | None = None
+    config: dict[str, Any] | None = None
+    cron: str | None = None
+
+
+class DataSourceResponse(BaseModel):
+    id: uuid.UUID
+    kb_id: uuid.UUID
+    kind: str
+    name: str
+    config: dict[str, Any]
+    status: str
+    last_sync_at: datetime | None
+    next_sync_at: datetime | None
+    cron: str | None
+    state: dict[str, Any]
+    last_error: str | None
+    stats: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class DataSourceListResponse(BaseModel):
+    items: list[DataSourceResponse]
+    total: int
+
+
+class DataSourceSyncResponse(BaseModel):
+    status: str
+    message: str
+    records_synced: int = 0
+    elapsed_ms: float = 0

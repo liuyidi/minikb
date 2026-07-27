@@ -1,6 +1,7 @@
 """API routes package."""
 from minikb.api.routes.api_keys import router as api_keys_router
 from minikb.api.routes.chunks import router as chunks_router
+from minikb.api.routes.data_sources import router as data_sources_router
 from minikb.api.routes.documents import router as documents_router
 from minikb.api.routes.ingest import router as ingest_router
 from minikb.api.routes.knowledge_bases import router as kb_router
@@ -15,4 +16,5 @@ __all__ = [
     "retrieval_router",
     "ingest_router",
     "qa_router",
+    "data_sources_router",
 ]

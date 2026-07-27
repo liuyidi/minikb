@@ -11,6 +11,9 @@ from minikb.db.base import (
 from minikb.db.models import (
     ApiKey,
     Chunk,
+    DataSource,
+    DataSourceKind,
+    DataSourceStatus,
     Document,
     DocumentStatus,
     IngestJob,
@@ -45,6 +48,7 @@ __all__ = [
     "Document",
     "Chunk",
     "IngestJob",
+    "DataSource",
     # Enums
     "OrgRole",
     "KbRole",
@@ -53,4 +57,6 @@ __all__ = [
     "DocumentStatus",
     "JobKind",
     "JobStatus",
+    "DataSourceKind",
+    "DataSourceStatus",
 ]
