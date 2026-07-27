@@ -359,6 +359,18 @@
                     <option value="hybrid">Hybrid</option>
                 </select>
             </div>
+            <div class="flex flex-gap mb-20" style="align-items: center;">
+                <label style="margin: 0; white-space: nowrap;">
+                    <input type="checkbox" id="retrieval-rerank" onchange="toggleRerankOptions()"> Rerank
+                </label>
+                <select id="rerank-provider" style="width: 120px; display: none;">
+                    <option value="mock">Mock</option>
+                    <option value="bm25">BM25</option>
+                    <option value="cohere">Cohere</option>
+                </select>
+                <label style="margin: 0; white-space: nowrap; display: none;" id="rerank-topn-label">Top N:</label>
+                <input type="number" id="rerank-top-n" value="5" min="1" max="20" style="width: 60px; display: none; margin: 0;">
+            </div>
             <div class="form-group">
                 <textarea id="retrieval-query" rows="3" placeholder="Enter your search query..."></textarea>
             </div>
@@ -698,13 +710,26 @@
                 return;
             }
 
+            // Build request body
+            const body = { query, mode, top_k: 10 };
+
+            // Add rerank config if enabled
+            const rerankEnabled = document.getElementById('retrieval-rerank').checked;
+            if (rerankEnabled) {
+                body.rerank = {
+                    enabled: true,
+                    provider: document.getElementById('rerank-provider').value,
+                    top_n: parseInt(document.getElementById('rerank-top-n').value) || 5,
+                };
+            }
+
             container.innerHTML = '<p class="text-muted">Searching...</p>';
 
             try {
                 const resp = await fetch(`${API_BASE}/kb/${kbId}/retrieve`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query, mode, top_k: 10 }),
+                    body: JSON.stringify(body),
                 });
 
                 const data = await resp.json();
@@ -729,6 +754,13 @@
             } catch (e) {
                 container.innerHTML = `<p style="color: #dc3545;">Error: ${e.message}</p>`;
             }
+        }
+
+        function toggleRerankOptions() {
+            const enabled = document.getElementById('retrieval-rerank').checked;
+            document.getElementById('rerank-provider').style.display = enabled ? '' : 'none';
+            document.getElementById('rerank-top-n').style.display = enabled ? '' : 'none';
+            document.getElementById('rerank-topn-label').style.display = enabled ? '' : 'none';
         }
 
         // ─── Chunks Panel ────────────────────────────────────────────────────

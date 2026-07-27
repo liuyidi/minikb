@@ -160,6 +160,13 @@ class RetrieveRequest(BaseModel):
     top_k: int = Field(default=8, ge=1, le=100)
     mode: str = Field(default="vector", pattern=r"^(vector|keyword|hybrid)$")
     filter: dict[str, Any] | None = None
+    rerank: RerankConfig | None = None
+
+
+class RerankConfig(BaseModel):
+    enabled: bool = False
+    provider: str = Field(default="mock", pattern=r"^(mock|bm25|cohere)$")
+    top_n: int = Field(default=5, ge=1, le=50)
 
 
 class RetrieveHit(BaseModel):

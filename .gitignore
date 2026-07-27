@@ -33,3 +33,4 @@ coverage.xml
 # Docker volumes accidentally mounted locally
 /data/
 /minikb-data/
+.claude/settings.local.json
