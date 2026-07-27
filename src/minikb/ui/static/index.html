@@ -269,6 +269,22 @@
         .mb-20 { margin-bottom: 20px; }
         .text-sm { font-size: 12px; }
         .text-muted { color: #666; }
+        /* QA Chat styles */
+        .qa-answer { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .qa-answer pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; }
+        .qa-meta { font-size: 12px; color: #666; margin-top: 10px; }
+        .qa-citations { margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        .qa-citation { display: inline-block; background: #e8f0fe; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin: 2px; cursor: pointer; }
+        .qa-citation:hover { background: #d2e3fc; }
+        .qa-faithfulness { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .qa-faithfulness.high { background: #d4edda; color: #155724; }
+        .qa-faithfulness.medium { background: #fff3cd; color: #856404; }
+        .qa-faithfulness.low { background: #f8d7da; color: #721c24; }
+        .qa-feedback { margin-top: 10px; }
+        .qa-feedback button { padding: 4px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; margin-right: 5px; }
+        .qa-feedback button:hover { background: #f0f0f0; }
+        .qa-feedback button.active-up { background: #d4edda; border-color: #28a745; }
+        .qa-feedback button.active-down { background: #f8d7da; border-color: #dc3545; }
     </style>
 </head>
 <body>
@@ -285,6 +301,7 @@
             <div class="tab" data-panel="documents">Documents</div>
             <div class="tab" data-panel="chunks">Chunks</div>
             <div class="tab" data-panel="retrieval">Retrieval</div>
+            <div class="tab" data-panel="qa">QA</div>
         </div>
 
         <!-- Knowledge Bases Panel -->
@@ -348,6 +365,30 @@
             <button class="btn btn-primary" onclick="doRetrieval()">Search</button>
             <div id="retrieval-results" class="search-results"></div>
         </div>
+
+        <!-- QA Panel -->
+        <div id="qa" class="panel">
+            <h2 class="mb-20">QA Playground</h2>
+            <div class="flex flex-gap mb-20">
+                <select id="qa-kb-select" style="flex: 1;">
+                    <option value="">Select KB...</option>
+                </select>
+                <select id="qa-mode" style="width: 120px;">
+                    <option value="vector">Vector</option>
+                    <option value="keyword">Keyword</option>
+                    <option value="hybrid">Hybrid</option>
+                </select>
+                <input type="number" id="qa-top-k" value="6" min="1" max="20" style="width: 80px;" title="Top K">
+            </div>
+            <div class="form-group">
+                <textarea id="qa-query" rows="3" placeholder="Ask a question about your knowledge base..."></textarea>
+            </div>
+            <div class="flex flex-gap mb-20">
+                <button class="btn btn-primary" onclick="doQA()">Ask</button>
+                <button class="btn btn-secondary" onclick="clearQA()">Clear</button>
+            </div>
+            <div id="qa-results"></div>
+        </div>
     </div>
 
     <!-- Create KB Modal -->
@@ -393,7 +434,7 @@
         const API_BASE = '/v1';
         let currentKbId = null;
 
-        // Tab switching - updated to include chunks
+        // Tab switching - updated to include chunks and QA
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -404,6 +445,7 @@
                 if (tab.dataset.panel === 'documents') loadKbOptions();
                 if (tab.dataset.panel === 'chunks') { loadKbOptions(); }
                 if (tab.dataset.panel === 'retrieval') loadKbOptions();
+                if (tab.dataset.panel === 'qa') loadKbOptions();
             });
         });
 
@@ -457,6 +499,8 @@
             document.getElementById('chunk-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
             document.getElementById('retrieval-kb-select').innerHTML =
+                '<option value="">Select KB...</option>' + options;
+            document.getElementById('qa-kb-select').innerHTML =
                 '<option value="">Select KB...</option>' + options;
         }
 
@@ -833,6 +877,102 @@
                 clearTimeout(_debounceTimers[key]);
                 _debounceTimers[key] = setTimeout(() => fn.apply(this, args), delay);
             };
+        }
+
+        // ─── QA Panel ────────────────────────────────────────────────────────
+
+        let lastQALogId = null;
+
+        async function doQA() {
+            const kbId = document.getElementById('qa-kb-select').value;
+            const mode = document.getElementById('qa-mode').value;
+            const topK = parseInt(document.getElementById('qa-top-k').value) || 6;
+            const query = document.getElementById('qa-query').value;
+            const container = document.getElementById('qa-results');
+
+            if (!kbId) { alert('Please select a KB'); return; }
+            if (!query) { alert('Please enter a question'); return; }
+
+            container.innerHTML = '<div class="card"><p class="text-muted">Thinking...</p></div>';
+
+            try {
+                const resp = await fetch(`${API_BASE}/kb/${kbId}/qa`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        mode,
+                        top_k: topK,
+                        stream: false,
+                    }),
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    container.innerHTML = `<div class="card" style="color: #dc3545;">Error: ${err.detail || 'Unknown error'}</div>`;
+                    return;
+                }
+
+                const data = await resp.json();
+
+                // Render answer
+                let faithClass = 'low';
+                let faithScore = data.faithfulness_score || 0;
+                if (faithScore >= 0.7) faithClass = 'high';
+                else if (faithScore >= 0.4) faithClass = 'medium';
+
+                let html = `
+                    <div class="qa-answer">
+                        <pre>${escapeHtml(data.answer)}</pre>
+                        <div class="qa-meta">
+                            <span>Model: ${data.model || 'unknown'}</span> ·
+                            <span>Retrieved: ${data.retrieval_hits} chunks</span> ·
+                            <span>Time: ${data.elapsed_ms.toFixed(0)}ms</span> ·
+                            <span class="qa-faithfulness ${faithClass}">Faithfulness: ${(faithScore * 100).toFixed(0)}%</span>
+                        </div>
+                `;
+
+                // Render citations
+                if (data.citations && data.citations.length > 0) {
+                    html += '<div class="qa-citations"><strong>Citations:</strong><br>';
+                    for (const cite of data.citations) {
+                        html += `<span class="qa-citation" title="${escapeHtml(cite.text_snippet || '')}" onclick="alert('${escapeHtml((cite.text_snippet || '').replace(/'/g, "\\'")).substring(0, 200)}')">[${cite.index}] ${escapeHtml(cite.doc_title || 'Untitled')}</span> `;
+                    }
+                    html += '</div>';
+                }
+
+                html += `
+                        <div class="qa-feedback">
+                            <button onclick="submitFeedback('${kbId}', 'up')" id="fb-up">👍 Helpful</button>
+                            <button onclick="submitFeedback('${kbId}', 'down')" id="fb-down">👎 Not helpful</button>
+                        </div>
+                    </div>
+                `;
+
+                // Also show retrieval hits
+                html += '<h3 class="mt-20 mb-10">Retrieved Chunks</h3>';
+                // The QA endpoint doesn't return hits directly, but we can note the count
+                html += `<p class="text-muted text-sm">${data.retrieval_hits} chunks were retrieved and used as context.</p>`;
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                container.innerHTML = `<div class="card" style="color: #dc3545;">Error: ${e.message}</div>`;
+            }
+        }
+
+        async function submitFeedback(kbId, feedback) {
+            // Update UI
+            document.getElementById('fb-up').className = feedback === 'up' ? 'active-up' : '';
+            document.getElementById('fb-down').className = feedback === 'down' ? 'active-down' : '';
+
+            // Note: In a real implementation, we'd save the QA log ID from the response
+            // and call the feedback endpoint. For now, just show the selection.
+        }
+
+        function clearQA() {
+            document.getElementById('qa-query').value = '';
+            document.getElementById('qa-results').innerHTML = '';
         }
 
         function escapeHtml(text) {

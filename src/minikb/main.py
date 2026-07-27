@@ -18,6 +18,7 @@ from minikb.api.routes import (
     documents_router,
     ingest_router,
     kb_router,
+    qa_router,
     retrieval_router,
 )
 from minikb.config.settings import get_settings
@@ -125,6 +126,7 @@ def create_app() -> FastAPI:
     app.include_router(chunks_router)
     app.include_router(retrieval_router)
     app.include_router(ingest_router)
+    app.include_router(qa_router)
 
     # Mount static UI files
     ui_dir = Path(__file__).parent / "ui" / "static"
