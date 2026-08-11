@@ -78,7 +78,20 @@
   - `docker compose up -d`
   - optional health checks after the restart
 
-### 4. ECS keeps the entire runtime stack local
+### 4. GitHub Actions sends Feishu notification
+
+- After the deploy step finishes, the workflow sends a Feishu message.
+- The default notification is a success message after the health check passes.
+- The message should include:
+  - repository name
+  - branch
+  - commit SHA
+  - deployed image tag
+  - target host
+  - result status
+- If the deploy or health check fails, the workflow should still be able to send a failure notification when possible.
+
+### 5. ECS keeps the entire runtime stack local
 
 - The ECS runs the application stack in one compose project.
 - The database, cache, object storage, and app containers all live on the same host.
@@ -97,6 +110,7 @@ The ECS is a fresh Ubuntu 22.04 instance, so the first-time setup must be explic
 - Configure SSH access for the GitHub Actions deploy key.
 - Authenticate the host to GHCR so it can pull private images.
 - Create persistent volumes for Postgres, Redis, and MinIO data.
+- Prepare a Feishu incoming webhook or bot token for deployment notifications.
 
 ### Ongoing release behavior
 
@@ -165,6 +179,7 @@ This layout is viable for a modest single-node production setup, but it is not c
 - The ECS must not contain GitHub tokens in the repo tree.
 - GHCR access should use a token with only the package-read scope needed for pull.
 - The SSH key used for deployment should be distinct from any personal login key.
+- Feishu notification credentials should live in GitHub Secrets, not in the repository.
 - Production secrets live only on the ECS `.env` file or the server secret store, not in GitHub source.
 
 ## Failure Handling
@@ -188,6 +203,7 @@ The implementation is expected to touch these areas:
 - `push main` produces a GHCR image.
 - The ECS automatically updates by pulling the new image and recreating containers.
 - The stack starts successfully on a fresh Ubuntu 22.04 ECS after one-time bootstrap.
+- A Feishu message is sent after a successful deploy.
 - A bad release can be rolled back to a prior `sha-<shortsha>` without rebuilding.
 - The documented memory budget fits the 4c4g machine without assuming extra headroom.
 
