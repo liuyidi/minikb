@@ -61,10 +61,8 @@ jobs:
             release_reason="manual"
             if [[ "$image_tag" == sha-* ]]; then
               commit_sha="$(resolve_commit_from_short_sha "${image_tag#sha-}")"
-            elif [[ "$image_tag" == "latest" ]]; then
-              commit_sha="$(resolve_latest_successful_commit)"
             else
-              commit_sha="$GITHUB_SHA_VALUE"
+              commit_sha="$(resolve_latest_successful_commit)"
             fi
           else
             commit_sha="$GITHUB_SHA_VALUE"
@@ -103,6 +101,8 @@ jobs:
       - name: Check out repository for deploy assets
         if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'manual'
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.commit_sha }}
 
       - name: Set up Docker Buildx
         if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'push_main'
