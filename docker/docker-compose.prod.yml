@@ -4,7 +4,7 @@
 #
 # This separates web (API) and worker (ingest) into distinct services.
 
-x-minikb-image: &minikb_image ${MINIKB_IMAGE:?set MINIKB_IMAGE}
+x-minikb-image: &minikb_image ${MINIKB_IMAGE:-ghcr.io/<owner>/minikb:latest}
 
 services:
   # ─── Infrastructure ────────────────────────────────────────────
