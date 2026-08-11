@@ -4,6 +4,8 @@
 #
 # This separates web (API) and worker (ingest) into distinct services.
 
+x-minikb-image: &minikb_image ${MINIKB_IMAGE:?set MINIKB_IMAGE}
+
 services:
   # ─── Infrastructure ────────────────────────────────────────────
 
@@ -86,9 +88,7 @@ services:
   # ─── Database Migration ────────────────────────────────────────
 
   migrate:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: *minikb_image
     container_name: minikb-migrate
     depends_on:
       postgres:
@@ -106,9 +106,7 @@ services:
   # ─── API Server ────────────────────────────────────────────────
 
   web:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: *minikb_image
     container_name: minikb-web
     restart: unless-stopped
     depends_on:
@@ -162,9 +160,7 @@ services:
   # ─── Ingest Worker ─────────────────────────────────────────────
 
   worker:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: *minikb_image
     container_name: minikb-worker
     restart: unless-stopped
     depends_on:
