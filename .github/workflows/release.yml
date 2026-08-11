@@ -69,6 +69,7 @@ jobs:
           image_repository="ghcr.io/${repo_lc}"
           image_ref="${image_repository}:${image_tag}"
           sha_image_ref="${image_repository}:sha-${short_sha}"
+          target_host="${ECS_HOST:-101.96.224.232}"
 
           {
             echo "commit_sha=$commit_sha"
@@ -81,7 +82,7 @@ jobs:
             echo "should_release=$should_release"
             echo "release_reason=$release_reason"
             echo "result_status=$result_status"
-            echo "target_host=$ECS_HOST"
+            echo "target_host=$target_host"
           } >> "$GITHUB_OUTPUT"
 
       - name: Check out release commit
@@ -140,7 +141,7 @@ jobs:
           set -euo pipefail
 
           ECS_USER="${ECS_USER:-root}"
-          : "${ECS_HOST:?ECS_HOST secret is required}"
+          ECS_HOST="${ECS_HOST:-101.96.224.232}"
           echo "syncing compose to ${ECS_USER}@${ECS_HOST}"
 
           ssh \
@@ -170,7 +171,7 @@ jobs:
           set -euo pipefail
 
           ECS_USER="${ECS_USER:-root}"
-          : "${ECS_HOST:?ECS_HOST secret is required}"
+          ECS_HOST="${ECS_HOST:-101.96.224.232}"
           echo "deploying to ${ECS_USER}@${ECS_HOST}"
 
           remote_env=(
