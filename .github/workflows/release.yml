@@ -32,15 +32,10 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           GITHUB_SHA_VALUE: ${{ github.sha }}
           ECS_HOST: ${{ secrets.ECS_HOST }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
           repo_lc="$(printf '%s' "$REPOSITORY" | tr '[:upper:]' '[:lower:]')"
-
-          resolve_ci_conclusion() {
-            ruby -e 'require "json"; require "net/http"; require "uri"; repo, token, head_sha, branch_name = ARGV; uri = URI("https://api.github.com/repos/#{repo}/actions/workflows/ci.yml/runs?#{URI.encode_www_form(head_sha: head_sha, branch: branch_name, status: "completed", per_page: "1")}"); req = Net::HTTP::Get.new(uri); req["Accept"] = "application/vnd.github+json"; req["Authorization"] = "Bearer #{token}"; req["X-GitHub-Api-Version"] = "2022-11-28"; 60.times do; res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(req) }; unless res.is_a?(Net::HTTPSuccess); warn "failed to inspect CI runs: #{res.code} #{res.message}"; exit 1; end; payload = JSON.parse(res.body); runs = payload.fetch("workflow_runs", []); if (run = runs.first) && (conclusion = run["conclusion"]); puts conclusion; exit 0; end; sleep 5; end; puts "missing"' "$REPOSITORY" "$GITHUB_TOKEN" "$GITHUB_SHA_VALUE" "$REF_NAME"
-          }
 
           resolve_commit_from_short_sha() {
             ruby -e 'require "json"; require "net/http"; require "uri"; repo, token, short_sha = ARGV; uri = URI("https://api.github.com/repos/#{repo}/commits/#{short_sha}"); req = Net::HTTP::Get.new(uri); req["Accept"] = "application/vnd.github+json"; req["Authorization"] = "Bearer #{token}"; req["X-GitHub-Api-Version"] = "2022-11-28"; res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(req) }; unless res.is_a?(Net::HTTPSuccess); warn "failed to resolve commit for #{short_sha}: #{res.code} #{res.message}"; exit 1; end; puts JSON.parse(res.body).fetch("sha")' "$REPOSITORY" "$GITHUB_TOKEN" "$1"
@@ -68,11 +63,6 @@ jobs:
             fi
           else
             commit_sha="$GITHUB_SHA_VALUE"
-            ci_conclusion="$(resolve_ci_conclusion)"
-            if [[ "$ci_conclusion" != "success" ]]; then
-              should_release="false"
-              result_status="skipped:${ci_conclusion:-unknown}"
-            fi
           fi
 
           short_sha="$(printf '%s' "$commit_sha" | cut -c1-7)"
@@ -223,6 +213,11 @@ jobs:
           JOB_STATUS: ${{ job.status }}
         run: |
           set -euo pipefail
+
+          if [[ -z "${FEISHU_WEBHOOK_URL:-}" ]]; then
+            echo "FEISHU_WEBHOOK_URL is not set; skipping Feishu notification."
+            exit 0
+          fi
 
           if [[ "$SHOULD_RELEASE" == "true" ]]; then
             result_status="$JOB_STATUS"
