@@ -135,7 +135,7 @@ jobs:
         if: steps.meta.outputs.should_release == 'true'
         env:
           ECS_HOST: ${{ secrets.ECS_HOST }}
-          ECS_USER: ${{ secrets.ECS_USER }}
+          ECS_USER: ${{ secrets.ECS_USER || 'root' }}
         run: |
           set -euo pipefail
 
@@ -158,7 +158,7 @@ jobs:
         if: steps.meta.outputs.should_release == 'true'
         env:
           ECS_HOST: ${{ secrets.ECS_HOST }}
-          ECS_USER: ${{ secrets.ECS_USER }}
+          ECS_USER: ${{ secrets.ECS_USER || 'root' }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
           IMAGE_REF: ${{ steps.meta.outputs.image_ref }}
