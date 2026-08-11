@@ -1,0 +1,250 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Deploy this existing image tag
+        required: false
+        default: latest
+
+concurrency:
+  group: release-${{ github.event_name }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve release metadata
+        id: meta
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_IMAGE_TAG: ${{ inputs.image_tag }}
+          REPOSITORY: ${{ github.repository }}
+          REF_NAME: ${{ github.ref_name }}
+          GITHUB_SHA_VALUE: ${{ github.sha }}
+          ECS_HOST: ${{ secrets.ECS_HOST }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          repo_lc="$(printf '%s' "$REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+
+          resolve_ci_conclusion() {
+            ruby -e 'require "json"; require "net/http"; require "uri"; repo, token, head_sha, branch_name = ARGV; uri = URI("https://api.github.com/repos/#{repo}/actions/workflows/ci.yml/runs?#{URI.encode_www_form(head_sha: head_sha, branch: branch_name, status: "completed", per_page: "1")}"); req = Net::HTTP::Get.new(uri); req["Accept"] = "application/vnd.github+json"; req["Authorization"] = "Bearer #{token}"; req["X-GitHub-Api-Version"] = "2022-11-28"; 60.times do; res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(req) }; unless res.is_a?(Net::HTTPSuccess); warn "failed to inspect CI runs: #{res.code} #{res.message}"; exit 1; end; payload = JSON.parse(res.body); runs = payload.fetch("workflow_runs", []); if (run = runs.first) && (conclusion = run["conclusion"]); puts conclusion; exit 0; end; sleep 5; end; puts "missing"' "$REPOSITORY" "$GITHUB_TOKEN" "$GITHUB_SHA_VALUE" "$REF_NAME"
+          }
+
+          resolve_commit_from_short_sha() {
+            ruby -e 'require "json"; require "net/http"; require "uri"; repo, token, short_sha = ARGV; uri = URI("https://api.github.com/repos/#{repo}/commits/#{short_sha}"); req = Net::HTTP::Get.new(uri); req["Accept"] = "application/vnd.github+json"; req["Authorization"] = "Bearer #{token}"; req["X-GitHub-Api-Version"] = "2022-11-28"; res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(req) }; unless res.is_a?(Net::HTTPSuccess); warn "failed to resolve commit for #{short_sha}: #{res.code} #{res.message}"; exit 1; end; puts JSON.parse(res.body).fetch("sha")' "$REPOSITORY" "$GITHUB_TOKEN" "$1"
+          }
+
+          resolve_latest_successful_commit() {
+            ruby -e 'require "json"; require "net/http"; require "uri"; repo, token, branch_name = ARGV; uri = URI("https://api.github.com/repos/#{repo}/actions/workflows/ci.yml/runs?#{URI.encode_www_form(branch: branch_name, status: "completed", conclusion: "success", per_page: "1")}"); req = Net::HTTP::Get.new(uri); req["Accept"] = "application/vnd.github+json"; req["Authorization"] = "Bearer #{token}"; req["X-GitHub-Api-Version"] = "2022-11-28"; res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(req) }; unless res.is_a?(Net::HTTPSuccess); warn "failed to inspect successful CI runs: #{res.code} #{res.message}"; exit 1; end; payload = JSON.parse(res.body); run = payload.fetch("workflow_runs", []).first or (warn "no successful CI run found for #{branch_name}"; exit 1); puts run.fetch("head_sha")' "$REPOSITORY" "$GITHUB_TOKEN" "$REF_NAME"
+          }
+
+          branch_name="$REF_NAME"
+          image_tag="latest"
+          should_release="true"
+          release_reason="push_main"
+          result_status="pending"
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            image_tag="${DISPATCH_IMAGE_TAG:-latest}"
+            release_reason="manual"
+            if [[ "$image_tag" == sha-* ]]; then
+              commit_sha="$(resolve_commit_from_short_sha "${image_tag#sha-}")"
+            elif [[ "$image_tag" == "latest" ]]; then
+              commit_sha="$(resolve_latest_successful_commit)"
+            else
+              commit_sha="unknown"
+            fi
+          else
+            commit_sha="$GITHUB_SHA_VALUE"
+            ci_conclusion="$(resolve_ci_conclusion)"
+            if [[ "$ci_conclusion" != "success" ]]; then
+              should_release="false"
+              result_status="skipped:${ci_conclusion:-unknown}"
+            fi
+          fi
+
+          short_sha="$(printf '%s' "$commit_sha" | cut -c1-7)"
+          image_repository="ghcr.io/${repo_lc}"
+          image_ref="${image_repository}:${image_tag}"
+          sha_image_ref="${image_repository}:sha-${short_sha}"
+
+          {
+            echo "commit_sha=$commit_sha"
+            echo "short_sha=$short_sha"
+            echo "branch_name=$branch_name"
+            echo "image_tag=$image_tag"
+            echo "image_repository=$image_repository"
+            echo "image_ref=$image_ref"
+            echo "sha_image_ref=$sha_image_ref"
+            echo "should_release=$should_release"
+            echo "release_reason=$release_reason"
+            echo "result_status=$result_status"
+            echo "target_host=$ECS_HOST"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check out release commit
+        if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'push_main'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.commit_sha }}
+
+      - name: Check out repository for deploy assets
+        if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'manual'
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'push_main'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR for publish
+        if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'push_main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push release image
+        id: build
+        if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'push_main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.ecs
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image_ref }}
+            ${{ steps.meta.outputs.sha_image_ref }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Write SSH key
+        if: steps.meta.outputs.should_release == 'true'
+        env:
+          ECS_SSH_KEY: ${{ secrets.ECS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$ECS_SSH_KEY" > "$RUNNER_TEMP/minikb-ecs.key"
+          chmod 600 "$RUNNER_TEMP/minikb-ecs.key"
+
+      - name: Sync compose file to ECS
+        if: steps.meta.outputs.should_release == 'true'
+        env:
+          ECS_HOST: ${{ secrets.ECS_HOST }}
+          ECS_USER: ${{ secrets.ECS_USER }}
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -i "$RUNNER_TEMP/minikb-ecs.key" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "$ECS_USER@$ECS_HOST" \
+            'install -d /opt/minikb'
+
+          scp \
+            -i "$RUNNER_TEMP/minikb-ecs.key" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            docker/docker-compose.prod.yml \
+            "$ECS_USER@$ECS_HOST:/opt/minikb/docker-compose.prod.yml"
+
+      - name: Deploy to ECS
+        id: deploy
+        if: steps.meta.outputs.should_release == 'true'
+        env:
+          ECS_HOST: ${{ secrets.ECS_HOST }}
+          ECS_USER: ${{ secrets.ECS_USER }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          IMAGE_REF: ${{ steps.meta.outputs.image_ref }}
+        run: |
+          set -euo pipefail
+
+          remote_env=(
+            "IMAGE_REF=$(printf '%q' "$IMAGE_REF")"
+            "GHCR_USERNAME=$(printf '%q' "$GHCR_USERNAME")"
+            "GHCR_READ_TOKEN=$(printf '%q' "$GHCR_READ_TOKEN")"
+          )
+
+          ssh \
+            -i "$RUNNER_TEMP/minikb-ecs.key" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "$ECS_USER@$ECS_HOST" \
+            "${remote_env[*]} bash -se" <<'REMOTE'
+          set -euo pipefail
+          cd /opt/minikb
+
+          if [[ -f .env ]]; then
+            grep -v '^MINIKB_IMAGE=' .env > .env.release.tmp || true
+            mv .env.release.tmp .env
+          else
+            touch .env
+          fi
+          printf 'MINIKB_IMAGE=%s\n' "$IMAGE_REF" >> .env
+
+          printf '%s' "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+          set -a
+          . ./.env
+          set +a
+
+          docker compose --env-file .env -f docker-compose.prod.yml pull
+          docker compose --env-file .env -f docker-compose.prod.yml up -d
+          curl --fail --silent --show-error "http://127.0.0.1:${MINIKB_PORT:-8080}/health/live" >/dev/null
+          REMOTE
+
+      - name: Notify Feishu
+        if: always()
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH_NAME: ${{ steps.meta.outputs.branch_name }}
+          COMMIT_SHA: ${{ steps.meta.outputs.commit_sha }}
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+          TARGET_HOST: ${{ steps.meta.outputs.target_host }}
+          SHOULD_RELEASE: ${{ steps.meta.outputs.should_release }}
+          INITIAL_RESULT_STATUS: ${{ steps.meta.outputs.result_status }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$SHOULD_RELEASE" == "true" ]]; then
+            result_status="$JOB_STATUS"
+          else
+            result_status="$INITIAL_RESULT_STATUS"
+          fi
+
+          payload="$(cat <<EOF
+          {
+            "msg_type": "text",
+            "content": {
+              "text": "minikb release\\nrepository: ${REPOSITORY}\\nbranch: ${BRANCH_NAME}\\ncommit SHA: ${COMMIT_SHA}\\nimage tag: ${IMAGE_TAG}\\ntarget host: ${TARGET_HOST}\\nresult status: ${result_status}"
+            }
+          }
+          EOF
+          )"
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -d "$payload" \
+            "$FEISHU_WEBHOOK_URL"

@@ -36,6 +36,19 @@ curl -s http://127.0.0.1:8080/health
 - **API Docs**: <http://127.0.0.1:8080/docs>
 - **MinIO Console**: <http://127.0.0.1:9001> (`minioadmin` / `minioadmin`)
 
+## Production deploy
+
+Production uses GHCR images and the ECS release workflow.
+
+- Release workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)
+- Production compose: [`docker/docker-compose.prod.yml`](docker/docker-compose.prod.yml)
+- Environment template: [`.env.example`](.env.example)
+- Bootstrap guide: [`deploy/bootstrap-ubuntu-22.04.md`](deploy/bootstrap-ubuntu-22.04.md)
+- Rollback guide: [`deploy/rollback.md`](deploy/rollback.md)
+- Ops checklist: [`deploy/ops-checklist.md`](deploy/ops-checklist.md)
+
+The ECS deployment root is `/opt/minikb`, with the server-side env file at `/opt/minikb/.env`.
+
 ## Usage
 
 ### Create a Knowledge Base
