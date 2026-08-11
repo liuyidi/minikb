@@ -135,9 +135,13 @@ jobs:
         if: steps.meta.outputs.should_release == 'true'
         env:
           ECS_HOST: ${{ secrets.ECS_HOST }}
-          ECS_USER: ${{ secrets.ECS_USER || 'root' }}
+          ECS_USER: ${{ secrets.ECS_USER }}
         run: |
           set -euo pipefail
+
+          ECS_USER="${ECS_USER:-root}"
+          : "${ECS_HOST:?ECS_HOST secret is required}"
+          echo "syncing compose to ${ECS_USER}@${ECS_HOST}"
 
           ssh \
             -i "$RUNNER_TEMP/minikb-ecs.key" \
@@ -158,12 +162,16 @@ jobs:
         if: steps.meta.outputs.should_release == 'true'
         env:
           ECS_HOST: ${{ secrets.ECS_HOST }}
-          ECS_USER: ${{ secrets.ECS_USER || 'root' }}
+          ECS_USER: ${{ secrets.ECS_USER }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
           IMAGE_REF: ${{ steps.meta.outputs.image_ref }}
         run: |
           set -euo pipefail
+
+          ECS_USER="${ECS_USER:-root}"
+          : "${ECS_HOST:?ECS_HOST secret is required}"
+          echo "deploying to ${ECS_USER}@${ECS_HOST}"
 
           remote_env=(
             "IMAGE_REF=$(printf '%q' "$IMAGE_REF")"
