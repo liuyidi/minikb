@@ -8,25 +8,27 @@ Implemented Task 2 in `/Users/liuyidi/github/minikb/.worktrees/codex-ghcr-ecs-au
 
 - Added a new `Release` GitHub Actions workflow at `.github/workflows/release.yml`.
 - Wired triggers to:
-  - `workflow_run` for `CI` completions on `main`
+  - `push` on `main` for automatic releases after CI passes
   - `workflow_dispatch` with `image_tag` input for tag-based redeploys
 - Set workflow permissions to `contents: read` and `packages: write`.
 - Added metadata resolution so the workflow:
+  - waits for the matching `CI` run on the pushed commit before releasing
   - deploys `latest` on successful `CI` runs from `main`
-  - redeploys any existing `image_tag` manually without rebuilding
-  - derives and records `sha-<shortsha>` tags from the release commit
+  - redeploys `sha-<shortsha>` tags by resolving them back to the full commit SHA
+  - treats non-`sha-*` custom tags as opaque redeploy inputs
 - Added GHCR publish steps for automatic releases:
-  - checkout the exact `workflow_run.head_sha`
+  - checkout the exact release commit
   - build `docker/Dockerfile.ecs` for `linux/amd64`
   - push `ghcr.io/<owner>/minikb:latest`
   - push `ghcr.io/<owner>/minikb:sha-<shortsha>`
 - Added ECS deploy over SSH:
   - logs into GHCR on the remote host with `GHCR_USERNAME` and `GHCR_READ_TOKEN`
   - updates `MINIKB_IMAGE` inside `/opt/minikb/.env`
+  - syncs `docker/docker-compose.prod.yml` to `/opt/minikb/docker-compose.prod.yml`
   - runs `docker compose --env-file .env -f docker-compose.prod.yml pull`
   - runs `docker compose --env-file .env -f docker-compose.prod.yml up -d`
   - verifies `http://127.0.0.1:${MINIKB_PORT:-8080}/health/live`
-- Added Feishu notification with `if: always()` and `continue-on-error: true` so deploy status is reported without turning a successful deploy into a failed workflow solely because the webhook had an issue.
+- Added Feishu notification with `if: always()` so deploy status is reported for both success and failure, while webhook failures still fail the workflow.
 
 ## Assumptions
 
@@ -37,17 +39,18 @@ Implemented Task 2 in `/Users/liuyidi/github/minikb/.worktrees/codex-ghcr-ecs-au
 
 ## Validation
 
-Attempted the requested validation command:
+Ran the requested validation command:
 
 ```bash
 actionlint .github/workflows/release.yml
 ```
 
-Result:
+Observed result:
 
-- `actionlint` is not installed in the local environment, so this exact check could not be run.
+- No output
+- Exit status `0`
 
-Fallback verification actually run:
+Also verified the file parses as YAML:
 
 ```bash
 ruby -e 'require "yaml"; YAML.load_file(".github/workflows/release.yml"); puts "YAML OK"'
@@ -61,9 +64,35 @@ Observed result:
 
 Implementation commit:
 
-- `68a6769` `feat: add GHCR ECS release workflow`
+- `52ed45c` `fix: finalize manual release metadata handling`
 
 ## Concerns
 
-- Manual `workflow_dispatch` redeploys use the provided `image_tag`, but the reported `commit SHA` is the workflow commit SHA available in GitHub Actions. If operators dispatch `sha-<shortsha>` rollbacks from a later commit, the notification will show the dispatch commit rather than a guaranteed full source commit for the deployed image.
-- The deploy path is intentionally minimal and depends on the host bootstrap matching `/opt/minikb` plus `docker-compose.prod.yml`; if Task 3 chooses a different host layout, this workflow will need a small follow-up adjustment.
+- The release workflow assumes the ECS bootstrap will provide SSH access, Docker, and a writable `/opt/minikb` directory.
+- Custom manual tags that are neither `latest` nor `sha-*` are treated as opaque deploy inputs, so the notification reports `commit SHA: unknown` for those redeploys.
+
+## Fix Round 1
+
+Addressed the review findings by:
+
+- switching the release trigger to `push main`
+- keeping CI gating inside the workflow by polling the `CI` workflow run for the pushed commit
+- resolving rollback `sha-<shortsha>` tags back to the full commit SHA for notifications, and resolving `latest` to the latest successful CI commit on `main`
+- treating other manual redeploy tags as opaque inputs instead of inventing a source commit
+- syncing `docker/docker-compose.prod.yml` to `/opt/minikb/docker-compose.prod.yml` before deploy
+- checking out the repository for manual dispatches before syncing deploy assets, while keeping deploy metadata honest
+- making Feishu notification failures fail the workflow instead of being ignored
+
+Re-validated the workflow with:
+
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/release.yml"); puts "YAML OK"'`
+- `actionlint .github/workflows/release.yml`
+
+`actionlint` produced no output and exited with status 0.
+Transcript:
+
+```text
+$ actionlint .github/workflows/release.yml
+<no output>
+exit 0
+```
