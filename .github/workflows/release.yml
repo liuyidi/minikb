@@ -132,6 +132,25 @@ jobs:
           printf '%s\n' "$ECS_SSH_KEY" > "$RUNNER_TEMP/minikb-ecs.key"
           chmod 600 "$RUNNER_TEMP/minikb-ecs.key"
 
+      - name: Test SSH access to ECS
+        if: steps.meta.outputs.should_release == 'true'
+        env:
+          ECS_HOST: ${{ secrets.ECS_HOST }}
+          ECS_USER: ${{ secrets.ECS_USER }}
+        run: |
+          set -euo pipefail
+
+          ECS_USER="${ECS_USER:-root}"
+          ECS_HOST="${ECS_HOST:-101.96.224.232}"
+          echo "testing ssh to ${ECS_USER}@${ECS_HOST}"
+
+          ssh \
+            -i "$RUNNER_TEMP/minikb-ecs.key" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "$ECS_USER@$ECS_HOST" \
+            'echo ssh-ok'
+
       - name: Sync compose file to ECS
         if: steps.meta.outputs.should_release == 'true'
         env:
