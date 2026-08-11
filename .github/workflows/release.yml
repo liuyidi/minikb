@@ -151,6 +151,18 @@ jobs:
             "$ECS_USER@$ECS_HOST" \
             'echo ssh-ok'
 
+      - name: Inspect SSH key material
+        if: steps.meta.outputs.should_release == 'true'
+        run: |
+          set -euo pipefail
+
+          if [[ ! -s "$RUNNER_TEMP/minikb-ecs.key" ]]; then
+            echo "SSH key file is empty"
+            exit 1
+          fi
+
+          ssh-keygen -lf "$RUNNER_TEMP/minikb-ecs.key"
+
       - name: Sync compose file to ECS
         if: steps.meta.outputs.should_release == 'true'
         env:
