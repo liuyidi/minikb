@@ -45,6 +45,7 @@ Production uses GHCR images and the ECS release workflow.
 - Environment template: [`.env.example`](.env.example)
 - Bootstrap guide: [`deploy/bootstrap-ubuntu-22.04.md`](deploy/bootstrap-ubuntu-22.04.md)
 - Rollback guide: [`deploy/rollback.md`](deploy/rollback.md)
+- Ops checklist: [`deploy/ops-checklist.md`](deploy/ops-checklist.md)
 
 The ECS deployment root is `/opt/minikb`, with the server-side env file at `/opt/minikb/.env`.
 

@@ -6,6 +6,7 @@ This directory contains the production bootstrap and rollback runbooks for the G
 
 - [Bootstrap Ubuntu 22.04](./bootstrap-ubuntu-22.04.md)
 - [Rollback](./rollback.md)
+- [Ops checklist](./ops-checklist.md)
 
 ## Production contract
 
