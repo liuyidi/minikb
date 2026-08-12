@@ -87,13 +87,13 @@ jobs:
 
       - name: Check out release commit
         if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'push_main'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.meta.outputs.commit_sha }}
 
       - name: Check out repository for deploy assets
         if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'manual'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         if: steps.meta.outputs.should_release == 'true' && steps.meta.outputs.release_reason == 'push_main'
