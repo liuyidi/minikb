@@ -1,4 +1,4 @@
-name: Publish ECS Demo
+name: Publish Volcengine Minikb
 
 # Rebuild minikb on the Aliyun ECS interview demo host (kb.liuyidi.me),
 # then notify Feishu via ServerlessShip.
@@ -19,7 +19,7 @@ on:
       - "uv.lock"
       - "docker/Dockerfile"
       - "docker/Dockerfile.ecs"
-      - ".github/workflows/publish-ecs-demo.yml"
+      - ".github/workflows/publish-volcengine-minikb.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
