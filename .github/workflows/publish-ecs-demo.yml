@@ -1,0 +1,189 @@
+name: Publish ECS Demo
+
+# Rebuild minikb on the Aliyun ECS interview demo host (kb.liuyidi.me),
+# then notify Feishu via ServerlessShip.
+#
+# Required repo settings (same names as minibot for easy copy):
+#   vars:  ECS_HOST, ECS_USER (optional ECS_SSH_PORT, SERVERLESSSHIP_RELEASE_URL)
+#   secrets: ECS_SSH_PRIVATE_KEY
+#
+# Trigger: push to main touching app/Docker paths, or Actions → Run workflow.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "docker/Dockerfile"
+      - "docker/Dockerfile.ecs"
+      - ".github/workflows/publish-ecs-demo.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-ecs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      ECS_HOST: ${{ vars.ECS_HOST || '116.62.35.76' }}
+      ECS_USER: ${{ vars.ECS_USER || 'root' }}
+      ECS_SSH_PORT: ${{ vars.ECS_SSH_PORT || 22 }}
+
+    outputs:
+      short_sha: ${{ steps.meta.outputs.short_sha }}
+
+    steps:
+      - name: Resolve deploy metadata
+        id: meta
+        run: |
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Pull minikb commit on ECS
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ env.ECS_HOST }}
+          username: ${{ env.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_PRIVATE_KEY }}
+          port: ${{ env.ECS_SSH_PORT }}
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            git config --global --add safe.directory /opt/demo/minikb
+            cd /opt/demo/minikb
+            git fetch origin "${{ github.sha }}"
+            git reset --hard "${{ github.sha }}"
+            echo "HEAD=$(git rev-parse --short HEAD)"
+            git log -1 --oneline
+
+      - name: Build minikb image on ECS
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ env.ECS_HOST }}
+          username: ${{ env.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_PRIVATE_KEY }}
+          port: ${{ env.ECS_SSH_PORT }}
+          command_timeout: 35m
+          script: |
+            set -euo pipefail
+            cd /opt/demo/mini-langfuse/deploy/demo
+            set -a
+            # shellcheck disable=SC1091
+            source .env
+            set +a
+            export MINIKB_DIR=/opt/demo/minikb
+            export MLF_DIR=/opt/demo/mini-langfuse
+            export MINIBOT_REPO_DIR=/opt/demo/minibot
+            export COMPOSE_BAKE=false
+            docker compose -f docker-compose.yml --env-file .env --profile kb build minikb
+
+      - name: Restart minikb (and MinIO deps)
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ env.ECS_HOST }}
+          username: ${{ env.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_PRIVATE_KEY }}
+          port: ${{ env.ECS_SSH_PORT }}
+          command_timeout: 10m
+          script: |
+            set -euo pipefail
+            cd /opt/demo/mini-langfuse/deploy/demo
+            set -a
+            # shellcheck disable=SC1091
+            source .env
+            set +a
+            export MINIKB_DIR=/opt/demo/minikb
+            export MLF_DIR=/opt/demo/mini-langfuse
+            export MINIBOT_REPO_DIR=/opt/demo/minibot
+            export COMPOSE_BAKE=false
+            COMPOSE=(docker compose -f docker-compose.yml --env-file .env --profile kb)
+            "${COMPOSE[@]}" up -d minio
+            "${COMPOSE[@]}" up -d minio-bootstrap minikb
+            docker ps --filter name=demo-minikb --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
+
+      - name: Wait for minikb /health
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ env.ECS_HOST }}
+          username: ${{ env.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_PRIVATE_KEY }}
+          port: ${{ env.ECS_SSH_PORT }}
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            ok=0
+            for i in $(seq 1 40); do
+              if curl -fsS --max-time 3 http://127.0.0.1:8081/health >/tmp/minikb-health.json; then
+                echo "health ok after ${i} attempt(s): $(cat /tmp/minikb-health.json)"
+                ok=1
+                break
+              fi
+              echo "waiting for minikb health (${i}/40)..."
+              sleep 3
+            done
+            if [[ "$ok" -ne 1 ]]; then
+              echo "minikb health check failed; recent logs:"
+              docker logs demo-minikb --tail 120 || true
+              exit 1
+            fi
+
+      - name: Verify UI and public URL
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ env.ECS_HOST }}
+          username: ${{ env.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_PRIVATE_KEY }}
+          port: ${{ env.ECS_SSH_PORT }}
+          command_timeout: 2m
+          script: |
+            set -euo pipefail
+            curl -fsS -o /dev/null -w "local ui %{http_code}\n" http://127.0.0.1:8081/ui/
+            curl -fsS -o /dev/null -w "public kb %{http_code}\n" https://kb.liuyidi.me/health || true
+
+  notify-serverlessship:
+    needs: publish-ecs
+    if: ${{ needs.publish-ecs.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      SERVERLESSSHIP_RELEASE_URL: ${{ vars.SERVERLESSSHIP_RELEASE_URL }}
+
+    steps:
+      - name: Send deploy notification to ServerlessShip
+        run: |
+          set -euo pipefail
+
+          serverlessship_release_url="${SERVERLESSSHIP_RELEASE_URL:-https://serverless-ship.liuyidi.me/api/releases}"
+
+          payload="$(node -e 'process.stdout.write(JSON.stringify({
+            project: "minikb",
+            version: process.env.RELEASE_VERSION,
+            tag: process.env.RELEASE_SHA,
+            repository: process.env.GITHUB_REPOSITORY,
+            releaseUrl: process.env.RELEASE_URL,
+            workflowUrl: process.env.WORKFLOW_URL,
+            channel: "ECS Demo",
+          }));')"
+
+          response="$(
+            curl -fsS \
+              -X POST \
+              -H "Content-Type: application/json" \
+              -d "$payload" \
+              "$serverlessship_release_url"
+          )"
+
+          echo "$response"
+        env:
+          RELEASE_VERSION: ${{ needs.publish-ecs.outputs.short_sha }}
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_URL: https://kb.liuyidi.me/
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
