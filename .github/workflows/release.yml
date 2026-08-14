@@ -1,8 +1,9 @@
 name: Release
 
+# Prefer publish-volcengine-minikb.yml for routine deploys.
+# Kept for manual rollback / redeploy of an existing GHCR tag.
+
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       image_tag:

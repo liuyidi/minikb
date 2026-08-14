@@ -1,154 +1,218 @@
 name: Publish Volcengine Minikb
 
-# Rebuild minikb on the interview demo host (kb.liuyidi.me),
-# then notify Feishu via ServerlessShip.
+# Build GHCR image and deploy to Volcengine ECS (/opt/minikb).
+# Host default: 101.96.224.232 (same contract as release.yml).
 #
-# Required repo settings (align with release.yml / minibot):
-#   vars:  ECS_HOST, ECS_USER (optional ECS_SSH_PORT, SERVERLESSSHIP_RELEASE_URL)
-#   secrets: ECS_SSH_KEY  (PEM; same secret used by release.yml)
+# Required secrets:
+#   ECS_SSH_KEY, GHCR_USERNAME, GHCR_READ_TOKEN
+# Optional:
+#   vars ECS_HOST / ECS_USER / ECS_SSH_PORT / SERVERLESSSHIP_RELEASE_URL
 #
-# Trigger: push to main touching app/Docker paths, or Actions → Run workflow.
+# Trigger: push to main (app/Docker paths) or Actions → Run workflow.
 
 on:
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Deploy existing GHCR tag (skip build). Empty = build this commit as latest + sha-*"
+        required: false
+        default: ""
   push:
     branches: [main]
     paths:
       - "src/**"
       - "pyproject.toml"
       - "uv.lock"
+      - "alembic/**"
+      - "alembic.ini"
       - "docker/Dockerfile"
       - "docker/Dockerfile.ecs"
+      - "docker/docker-compose.prod.yml"
       - ".github/workflows/publish-volcengine-minikb.yml"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: publish-volcengine-minikb
   cancel-in-progress: true
 
 jobs:
-  publish-ecs:
+  publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
+      packages: write
+
     env:
-      ECS_HOST: ${{ vars.ECS_HOST || '116.62.35.76' }}
+      ECS_HOST: ${{ vars.ECS_HOST || '101.96.224.232' }}
       ECS_USER: ${{ vars.ECS_USER || 'root' }}
       ECS_SSH_PORT: ${{ vars.ECS_SSH_PORT || 22 }}
 
     outputs:
       short_sha: ${{ steps.meta.outputs.short_sha }}
+      image_ref: ${{ steps.meta.outputs.image_ref }}
 
     steps:
-      - name: Resolve deploy metadata
+      - name: Resolve release metadata
         id: meta
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_IMAGE_TAG: ${{ inputs.image_tag }}
+          REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA_VALUE: ${{ github.sha }}
         run: |
-          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          repo_lc="$(printf '%s' "$REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          image_repository="ghcr.io/${repo_lc}"
+          commit_sha="$GITHUB_SHA_VALUE"
+          short_sha="$(printf '%s' "$commit_sha" | cut -c1-7)"
+          should_build="true"
+          image_tag="latest"
 
-      - name: Pull minikb commit on ECS
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ env.ECS_HOST }}
-          username: ${{ env.ECS_USER }}
-          key: ${{ secrets.ECS_SSH_KEY }}
-          port: ${{ env.ECS_SSH_PORT }}
-          command_timeout: 5m
-          script: |
-            set -euo pipefail
-            git config --global --add safe.directory /opt/demo/minikb
-            cd /opt/demo/minikb
-            git fetch origin "${{ github.sha }}"
-            git reset --hard "${{ github.sha }}"
-            echo "HEAD=$(git rev-parse --short HEAD)"
-            git log -1 --oneline
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && -n "${DISPATCH_IMAGE_TAG:-}" ]]; then
+            should_build="false"
+            image_tag="$DISPATCH_IMAGE_TAG"
+          fi
 
-      - name: Build minikb image on ECS
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ env.ECS_HOST }}
-          username: ${{ env.ECS_USER }}
-          key: ${{ secrets.ECS_SSH_KEY }}
-          port: ${{ env.ECS_SSH_PORT }}
-          command_timeout: 35m
-          script: |
-            set -euo pipefail
-            cd /opt/demo/mini-langfuse/deploy/demo
-            set -a
-            # shellcheck disable=SC1091
-            source .env
-            set +a
-            export MINIKB_DIR=/opt/demo/minikb
-            export MLF_DIR=/opt/demo/mini-langfuse
-            export MINIBOT_REPO_DIR=/opt/demo/minibot
-            export COMPOSE_BAKE=false
-            docker compose -f docker-compose.yml --env-file .env --profile kb build minikb
+          image_ref="${image_repository}:${image_tag}"
+          sha_image_ref="${image_repository}:sha-${short_sha}"
 
-      - name: Restart minikb (and MinIO deps)
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ env.ECS_HOST }}
-          username: ${{ env.ECS_USER }}
-          key: ${{ secrets.ECS_SSH_KEY }}
-          port: ${{ env.ECS_SSH_PORT }}
-          command_timeout: 10m
-          script: |
-            set -euo pipefail
-            cd /opt/demo/mini-langfuse/deploy/demo
-            set -a
-            # shellcheck disable=SC1091
-            source .env
-            set +a
-            export MINIKB_DIR=/opt/demo/minikb
-            export MLF_DIR=/opt/demo/mini-langfuse
-            export MINIBOT_REPO_DIR=/opt/demo/minibot
-            export COMPOSE_BAKE=false
-            COMPOSE=(docker compose -f docker-compose.yml --env-file .env --profile kb)
-            "${COMPOSE[@]}" up -d minio
-            "${COMPOSE[@]}" up -d minio-bootstrap minikb
-            docker ps --filter name=demo-minikb --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
+          {
+            echo "commit_sha=$commit_sha"
+            echo "short_sha=$short_sha"
+            echo "should_build=$should_build"
+            echo "image_tag=$image_tag"
+            echo "image_repository=$image_repository"
+            echo "image_ref=$image_ref"
+            echo "sha_image_ref=$sha_image_ref"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Wait for minikb /health
-        uses: appleboy/ssh-action@v1.2.2
+          echo "image_ref=$image_ref should_build=$should_build host=${ECS_HOST}"
+
+      - uses: actions/checkout@v6
         with:
-          host: ${{ env.ECS_HOST }}
-          username: ${{ env.ECS_USER }}
-          key: ${{ secrets.ECS_SSH_KEY }}
-          port: ${{ env.ECS_SSH_PORT }}
-          command_timeout: 5m
-          script: |
-            set -euo pipefail
-            ok=0
-            for i in $(seq 1 40); do
-              if curl -fsS --max-time 3 http://127.0.0.1:8081/health >/tmp/minikb-health.json; then
-                echo "health ok after ${i} attempt(s): $(cat /tmp/minikb-health.json)"
-                ok=1
-                break
-              fi
-              echo "waiting for minikb health (${i}/40)..."
-              sleep 3
-            done
-            if [[ "$ok" -ne 1 ]]; then
-              echo "minikb health check failed; recent logs:"
-              docker logs demo-minikb --tail 120 || true
-              exit 1
+          ref: ${{ steps.meta.outputs.commit_sha }}
+
+      - name: Set up Docker Buildx
+        if: steps.meta.outputs.should_build == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: steps.meta.outputs.should_build == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        if: steps.meta.outputs.should_build == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.ecs
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image_ref }}
+            ${{ steps.meta.outputs.sha_image_ref }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Write SSH key
+        env:
+          ECS_SSH_KEY: ${{ secrets.ECS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${ECS_SSH_KEY:-}" ]]; then
+            echo "ECS_SSH_KEY secret is empty" >&2
+            exit 1
+          fi
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$ECS_SSH_KEY" > "$RUNNER_TEMP/minikb-ecs.key"
+          chmod 600 "$RUNNER_TEMP/minikb-ecs.key"
+          ssh-keygen -lf "$RUNNER_TEMP/minikb-ecs.key"
+
+      - name: Sync compose and deploy
+        env:
+          IMAGE_REF: ${{ steps.meta.outputs.image_ref }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          SSH=(
+            ssh
+            -i "$RUNNER_TEMP/minikb-ecs.key"
+            -p "$ECS_SSH_PORT"
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=accept-new
+          )
+          SCP=(
+            scp
+            -i "$RUNNER_TEMP/minikb-ecs.key"
+            -P "$ECS_SSH_PORT"
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=accept-new
+          )
+
+          echo "deploying ${IMAGE_REF} → ${ECS_USER}@${ECS_HOST}:/opt/minikb"
+
+          "${SSH[@]}" "$ECS_USER@$ECS_HOST" 'install -d /opt/minikb'
+          "${SCP[@]}" docker/docker-compose.prod.yml \
+            "$ECS_USER@$ECS_HOST:/opt/minikb/docker-compose.prod.yml"
+
+          remote_env=(
+            "IMAGE_REF=$(printf '%q' "$IMAGE_REF")"
+            "GHCR_USERNAME=$(printf '%q' "$GHCR_USERNAME")"
+            "GHCR_READ_TOKEN=$(printf '%q' "$GHCR_READ_TOKEN")"
+          )
+
+          "${SSH[@]}" "$ECS_USER@$ECS_HOST" \
+            "${remote_env[*]} bash -se" <<'REMOTE'
+          set -euo pipefail
+          cd /opt/minikb
+
+          if [[ -f .env ]]; then
+            grep -v '^MINIKB_IMAGE=' .env > .env.release.tmp || true
+            mv .env.release.tmp .env
+          else
+            touch .env
+          fi
+          printf 'MINIKB_IMAGE=%s\n' "$IMAGE_REF" >> .env
+
+          printf '%s' "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+          set -a
+          # shellcheck disable=SC1091
+          . ./.env
+          set +a
+
+          docker compose --env-file .env -f docker-compose.prod.yml pull
+          docker compose --env-file .env -f docker-compose.prod.yml up -d
+          docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' | head -20
+
+          ok=0
+          for i in $(seq 1 40); do
+            if curl -fsS --max-time 3 "http://127.0.0.1:${MINIKB_PORT:-8080}/health/live" >/tmp/minikb-health.json; then
+              echo "health ok after ${i} attempt(s): $(cat /tmp/minikb-health.json)"
+              ok=1
+              break
             fi
-
-      - name: Verify UI and public URL
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ env.ECS_HOST }}
-          username: ${{ env.ECS_USER }}
-          key: ${{ secrets.ECS_SSH_KEY }}
-          port: ${{ env.ECS_SSH_PORT }}
-          command_timeout: 2m
-          script: |
-            set -euo pipefail
-            curl -fsS -o /dev/null -w "local ui %{http_code}\n" http://127.0.0.1:8081/ui/
-            curl -fsS -o /dev/null -w "public kb %{http_code}\n" https://kb.liuyidi.me/health || true
+            echo "waiting for minikb health (${i}/40)..."
+            sleep 3
+          done
+          if [[ "$ok" -ne 1 ]]; then
+            echo "minikb health check failed; recent logs:"
+            docker logs minikb-web --tail 120 || true
+            exit 1
+          fi
+          curl -fsS -o /dev/null -w "local ui %{http_code}\n" \
+            "http://127.0.0.1:${MINIKB_PORT:-8080}/ui/" || true
+          REMOTE
 
   notify-serverlessship:
-    needs: publish-ecs
-    if: ${{ needs.publish-ecs.result == 'success' }}
+    needs: publish
+    if: ${{ needs.publish.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -170,7 +234,7 @@ jobs:
             repository: process.env.GITHUB_REPOSITORY,
             releaseUrl: process.env.RELEASE_URL,
             workflowUrl: process.env.WORKFLOW_URL,
-            channel: "ECS Demo",
+            channel: "Volcengine",
           }));')"
 
           response="$(
@@ -183,7 +247,7 @@ jobs:
 
           echo "$response"
         env:
-          RELEASE_VERSION: ${{ needs.publish-ecs.outputs.short_sha }}
+          RELEASE_VERSION: ${{ needs.publish.outputs.short_sha }}
           RELEASE_SHA: ${{ github.sha }}
-          RELEASE_URL: https://kb.liuyidi.me/
+          RELEASE_URL: ${{ needs.publish.outputs.image_ref }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
