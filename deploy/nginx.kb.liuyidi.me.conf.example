@@ -1,0 +1,53 @@
+# Aliyun nginx → Volcengine minikb (kb.liuyidi.me)
+
+Same pattern as mini-auth (`auth.liuyidi.me` → Tencent): DNS and TLS stay on
+Aliyun; app traffic is reverse-proxied to Volcengine.
+
+```text
+https://kb.liuyidi.me  →  Aliyun nginx:443  →  http://101.96.224.232:80
+```
+
+(`MINIKB_PORT` on Volcengine maps host `:80` → container `:8080`.)
+
+App publish: [`.github/workflows/publish-volcengine-minikb.yml`](../.github/workflows/publish-volcengine-minikb.yml)
+
+## Install on Aliyun (TLS already issued for kb.liuyidi.me)
+
+```nginx
+upstream demo_kb { server 101.96.224.232:80; keepalive 8; }
+
+server {
+    listen 443 ssl http2;
+    server_name kb.liuyidi.me;
+    # ssl_certificate … (existing certbot paths)
+
+    client_max_body_size 64m;
+
+    location = / { return 302 /ui/; }
+
+    location / {
+        proxy_pass http://demo_kb;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port 443;
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 300s;
+    }
+}
+```
+
+## Volcengine firewall
+
+Allow **Aliyun ECS** (`116.62.35.76`) to reach TCP **80** on Volcengine (currently open). Prefer locking SG to that IP rather than `0.0.0.0/0` if possible.
+
+## Verify
+
+```bash
+curl -fsS http://127.0.0.1/health/live          # on Volcengine (host port 80)
+curl -fsS https://kb.liuyidi.me/health          # via Aliyun
+curl -fsS -o /dev/null -w "%{http_code}\n" https://kb.liuyidi.me/ui/
+```
