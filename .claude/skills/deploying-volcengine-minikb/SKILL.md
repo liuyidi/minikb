@@ -9,7 +9,7 @@ description: >-
 
 # minikb 发布（Volcengine）
 
-应用已经拆开，**先选仓**。本 skill 只覆盖 kb **应用**；阿里云 nginx 反代属于 minibot 仓。
+应用已经拆开，**先选仓**。本 skill 覆盖 kb 应用 **和** 火山引擎本机 nginx/TLS。阿里云不再反代 `kb.liuyidi.me`。
 
 | 域名 | 仓 | 云 | Skill |
 |------|----|----|-------|
@@ -19,7 +19,7 @@ description: >-
 | `auth.liuyidi.me` | mini-auth | 腾讯云 CVM | mini-auth `deploying-tencent-mini-auth` |
 | `serverless-ship.liuyidi.me` | serverless-ship | Vercel | serverless-ship `deploying-vercel-serverless-ship` |
 
-minikb **不在**阿里云 compose。公网 TLS 在阿里云 nginx：`upstream demo_kb { server 101.96.224.232:80; }`，模板 `deploy/nginx.kb.liuyidi.me.conf.example`。改反代去 minibot 仓；改应用走本仓 workflow。
+minikb **不在**阿里云 compose。DNS `kb.liuyidi.me` → `101.96.224.232`；TLS 在火山 nginx（模板 `deploy/nginx.kb.liuyidi.me.conf.example`），反代 `127.0.0.1:8080`。改应用走本仓 workflow；不要再改 minibot 仓里的阿里云 kb server。
 
 ## 发布（优先）
 
@@ -37,7 +37,10 @@ GitHub Actions → `Publish Volcengine Minikb`（`publish-volcengine-minikb.yml`
 cd /opt/minikb
 docker compose --env-file .env -f docker-compose.prod.yml ps
 curl --fail --silent --show-error http://127.0.0.1:8080/health/live
+curl --fail --silent --show-error https://kb.liuyidi.me/health
 ```
+
+`MINIKB_PORT=8080`（loopback）。不要把 web 绑回宿主机 `:80`（nginx 占用 80/443）。
 
 细节见 `deploy/ops-checklist.md`。
 

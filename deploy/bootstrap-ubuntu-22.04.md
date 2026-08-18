@@ -105,3 +105,5 @@ Optional monitoring also uses `minikb_prometheus_data`.
 ```bash
 curl --fail --silent --show-error http://127.0.0.1:8080/health/live
 ```
+
+Web is bound to loopback (`127.0.0.1:8080`). Public HTTPS is host nginx; see [`nginx.kb.liuyidi.me.conf.example`](./nginx.kb.liuyidi.me.conf.example) and keep `MINIKB_PORT=8080` in `/opt/minikb/.env`.

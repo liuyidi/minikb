@@ -8,6 +8,7 @@ Use this when the server is already bootstrapped and you want the fastest path t
 - Server env file: `/opt/minikb/.env`
 - Compose file: `/opt/minikb/docker-compose.prod.yml`
 - App health endpoint: `http://127.0.0.1:8080/health/live`
+- Public TLS: host nginx `kb.liuyidi.me` → loopback `:8080` (`MINIKB_PORT=8080`)
 
 ## Quick status checks
 
@@ -15,6 +16,8 @@ Use this when the server is already bootstrapped and you want the fastest path t
 cd /opt/minikb
 docker compose --env-file .env -f docker-compose.prod.yml ps
 curl --fail --silent --show-error http://127.0.0.1:8080/health/live
+curl --fail --silent --show-error https://kb.liuyidi.me/health
+systemctl is-active nginx
 ```
 
 ## Logs
