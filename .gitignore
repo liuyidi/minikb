@@ -36,3 +36,7 @@ coverage.xml
 /minikb-data/
 .worktrees/
 .claude/settings.local.json
+
+web/node_modules/
+web/.next/
+web/out/
