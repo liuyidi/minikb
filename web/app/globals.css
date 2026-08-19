@@ -2,6 +2,8 @@
 @import "@minikb/ui/styles/base.css";
 @import "tailwindcss";
 
+@source "../../packages/ui/**/*.{ts,tsx}";
+
 html,
 body {
   background: var(--background);
