@@ -1,8 +1,9 @@
 # minikb deployment
 
 Production bootstrap and rollback for the **Volcengine** GHCR + compose flow.
-Public URL `https://kb.liuyidi.me` terminates TLS on **this host** (nginx :443 →
-`127.0.0.1:8080`). DNS A record points at `101.96.224.232`; Aliyun is not in the path.
+Public URL `https://kb.liuyidi.me` terminates TLS on **this host**. nginx splits
+`/v1` and `/health` to FastAPI (`127.0.0.1:8080`) and `/` to Next (`127.0.0.1:3000`).
+DNS A record points at `101.96.224.232`; Aliyun is not in the path.
 
 ## Entry points
 
@@ -23,7 +24,7 @@ Public URL `https://kb.liuyidi.me` terminates TLS on **this host** (nginx :443 �
 - Deployment root: `/opt/minikb`
 - Server-side env file: `/opt/minikb/.env`
 - Compose file on the host: `/opt/minikb/docker-compose.prod.yml`
-- Host nginx: `/etc/nginx/sites-enabled/kb.liuyidi.me` (TLS; app on `127.0.0.1:8080`)
+- Host nginx: `/etc/nginx/sites-enabled/kb.liuyidi.me` (TLS; `/v1` → `:8080`, `/` → `:3000`)
 - Persistent volumes: `minikb_pgdata`, `minikb_redisdata`, `minikb_miniodata`, …
 
 ## Do not

@@ -1,26 +1,26 @@
 # Volcengine host nginx for kb.liuyidi.me (TLS on this machine).
 #
-# https://kb.liuyidi.me  →  nginx :443  →  127.0.0.1:8080 (minikb-web)
+# https://kb.liuyidi.me/v1/*  →  127.0.0.1:8080 (FastAPI, compose service web)
+# https://kb.liuyidi.me/*     →  127.0.0.1:3000 (Next, compose service frontend)
 #
 # DNS A record: kb.liuyidi.me → 101.96.224.232
 # App publish: .github/workflows/publish-volcengine-minikb.yml
-# Compose publishes web only on loopback: 127.0.0.1:${MINIKB_PORT:-8080}:8080
+#
+# Dual-run: until frontend is healthy you may keep / pointing at :8080/ui.
+# After cutover, /ui 301s to /.
 #
 # Install:
 #   1. apt-get install -y nginx certbot python3-certbot-nginx
 #   2. MINIKB_PORT=8080 in /opt/minikb/.env (not 80 — nginx owns 80/443)
 #   3. Copy this file to /etc/nginx/sites-available/kb.liuyidi.me
-#      (without the comment header, or keep comments — nginx ignores #)
 #   4. ln -sf .../kb.liuyidi.me /etc/nginx/sites-enabled/
 #      rm -f /etc/nginx/sites-enabled/default
 #   5. nginx -t && systemctl enable --now nginx
 #   6. certbot --nginx -d kb.liuyidi.me
-#      If apt certbot crashes on urllib3 2.x from /usr/local, run:
-#      PYTHONPATH=/usr/lib/python3/dist-packages certbot --nginx -d kb.liuyidi.me
-#      and set the same env on certbot.service (systemd drop-in).
 #   7. Security group: TCP 80 + 443 from 0.0.0.0/0
 
-upstream minikb_web { server 127.0.0.1:8080; keepalive 8; }
+upstream minikb_api { server 127.0.0.1:8080; keepalive 8; }
+upstream minikb_web { server 127.0.0.1:3000; keepalive 8; }
 
 server {
     listen 80;
@@ -31,11 +31,39 @@ server {
         root /var/www/certbot;
     }
 
-    location = / {
-        return 302 /ui/;
+    client_max_body_size 64m;
+
+    location /v1/ {
+        proxy_pass http://minikb_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
+        proxy_buffering off;
+        proxy_read_timeout 300s;
     }
 
-    client_max_body_size 64m;
+    location = /health {
+        proxy_pass http://minikb_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    location /health/ {
+        proxy_pass http://minikb_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    location /ui/ {
+        return 301 /;
+    }
+
+    location = /ui {
+        return 301 /;
+    }
 
     location / {
         proxy_pass http://minikb_web;
@@ -44,9 +72,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header Authorization $http_authorization;
-        proxy_connect_timeout 10s;
-        proxy_read_timeout 300s;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
     }
 }

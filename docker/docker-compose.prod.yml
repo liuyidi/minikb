@@ -2,7 +2,7 @@
 # Usage:
 #   docker compose -f docker/docker-compose.prod.yml up -d
 #
-# This separates web (API) and worker (ingest) into distinct services.
+# web = FastAPI API; frontend = Next standalone; worker = ingest.
 
 x-minikb-image: &minikb_image ${MINIKB_IMAGE:-ghcr.io/<owner>/minikb:latest}
 
@@ -137,7 +137,10 @@ services:
       MINIKB_EMBEDDING_MODEL: ${MINIKB_EMBEDDING_MODEL:-text-embedding-3-small}
       MINIKB_EMBEDDING_DIM: ${MINIKB_EMBEDDING_DIM:-1536}
       MINIKB_DEFAULT_ORG_SLUG: ${MINIKB_DEFAULT_ORG_SLUG:-default}
-      MINIKB_REQUIRE_API_KEY: ${MINIKB_REQUIRE_API_KEY:-false}
+      MINIKB_REQUIRE_API_KEY: ${MINIKB_REQUIRE_API_KEY:-true}
+      MINIKB_JWT_SECRET: ${MINIKB_JWT_SECRET:-}
+      MINIKB_JWT_ISSUER: ${MINIKB_JWT_ISSUER:-https://auth.liuyidi.me}
+      MINIKB_JWT_AUDIENCE: ${MINIKB_JWT_AUDIENCE:-mini-auth}
       MINIKB_MAX_UPLOAD_MB: ${MINIKB_MAX_UPLOAD_MB:-100}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
@@ -199,6 +202,37 @@ services:
       resources:
         limits:
           memory: 2G
+
+  # ─── Next admin (standalone) ───────────────────────────────────
+
+  frontend:
+    image: ${MINIKB_WEB_IMAGE:?set MINIKB_WEB_IMAGE}
+    container_name: minikb-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      MINIAUTH_ISSUER: ${MINIAUTH_ISSUER:-https://auth.liuyidi.me}
+      MINIAUTH_CLIENT_ID: ${MINIAUTH_CLIENT_ID:-minikb}
+      MINIAUTH_REDIRECT_URI: ${MINIAUTH_REDIRECT_URI:-https://kb.liuyidi.me/login/callback}
+      MINIKB_SESSION_SECRET: ${MINIKB_SESSION_SECRET:?set MINIKB_SESSION_SECRET}
+      MINIKB_API_URL: http://web:8080
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   # ─── Metrics (optional) ────────────────────────────────────────
 
