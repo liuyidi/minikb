@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authEnv, issuerBase } from "@/lib/auth";
+import { publicUrl } from "@/lib/origin";
 import { isSafeNextPath } from "@/lib/paths";
 import {
   OAUTH_NEXT_COOKIE,
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   const next = request.cookies.get(OAUTH_NEXT_COOKIE)?.value ?? "/";
 
   if (!code || !state || !storedState || !verifier || state !== storedState) {
-    return NextResponse.redirect(new URL("/?error=auth", request.url));
+    return NextResponse.redirect(publicUrl(request, "/?error=auth"));
   }
 
   let issuer: string;
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   try {
     ({ issuer, clientId, redirectUri, sessionSecret } = authEnv());
   } catch {
-    return NextResponse.redirect(new URL("/?error=config", request.url));
+    return NextResponse.redirect(publicUrl(request, "/?error=config"));
   }
 
   const tokenResp = await fetch(`${issuerBase(issuer)}/oauth/token`, {
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
   });
 
   if (!tokenResp.ok) {
-    return NextResponse.redirect(new URL("/?error=token", request.url));
+    return NextResponse.redirect(publicUrl(request, "/?error=token"));
   }
 
   const tokenData = (await tokenResp.json()) as {
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
   const expiresIn = Number(tokenData.expires_in ?? 3600);
 
   if (!accessToken) {
-    return NextResponse.redirect(new URL("/?error=token", request.url));
+    return NextResponse.redirect(publicUrl(request, "/?error=token"));
   }
 
   const userinfoResp = await fetch(`${issuerBase(issuer)}/oauth/userinfo`, {
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
   });
 
   if (!userinfoResp.ok) {
-    return NextResponse.redirect(new URL("/?error=userinfo", request.url));
+    return NextResponse.redirect(publicUrl(request, "/?error=userinfo"));
   }
 
   const userinfo = (await userinfoResp.json()) as { sub?: string; id?: string };
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
   );
 
   const safeNext = isSafeNextPath(next) ? next : "/";
-  const response = NextResponse.redirect(new URL(safeNext, request.url));
+  const response = NextResponse.redirect(publicUrl(request, safeNext));
   response.cookies.set(SESSION_COOKIE, sessionToken, sessionCookieOptions());
 
   const cleared = clearCookieOptions();

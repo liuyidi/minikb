@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { publicUrl } from "@/lib/origin";
 
 const PUBLIC = [
   /^\/api\/health$/,
@@ -23,10 +24,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   if (!request.cookies.get("minikb_session")?.value) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/api/auth/login";
-    url.search = `?next=${encodeURIComponent(pathname)}`;
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(
+      publicUrl(request, `/api/auth/login?next=${encodeURIComponent(pathname)}`),
+    );
   }
   return NextResponse.next();
 }

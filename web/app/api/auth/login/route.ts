@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { authEnv, buildAuthorizeUrl, randomVerifier } from "@/lib/auth";
+import { publicUrl } from "@/lib/origin";
 import { isSafeNextPath } from "@/lib/paths";
 import {
   OAUTH_NEXT_COOKIE,
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     ({ issuer, clientId, redirectUri } = authEnv());
   } catch {
-    return NextResponse.redirect(new URL("/?error=config", request.url));
+    return NextResponse.redirect(publicUrl(request, "/?error=config"));
   }
 
   const nextParam = request.nextUrl.searchParams.get("next") ?? "/";
