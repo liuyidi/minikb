@@ -27,7 +27,9 @@ on:
       - "alembic.ini"
       - "docker/Dockerfile"
       - "docker/Dockerfile.ecs"
+      - "docker/Dockerfile.web"
       - "docker/docker-compose.prod.yml"
+      - "web/**"
       - ".github/workflows/publish-volcengine-minikb.yml"
 
 concurrency:
@@ -50,6 +52,7 @@ jobs:
     outputs:
       short_sha: ${{ steps.meta.outputs.short_sha }}
       image_ref: ${{ steps.meta.outputs.image_ref }}
+      web_image_ref: ${{ steps.meta.outputs.web_image_ref }}
 
     steps:
       - name: Resolve release metadata
@@ -75,6 +78,9 @@ jobs:
 
           image_ref="${image_repository}:${image_tag}"
           sha_image_ref="${image_repository}:sha-${short_sha}"
+          web_image_repository="${image_repository}-web"
+          web_image_ref="${web_image_repository}:${image_tag}"
+          web_sha_image_ref="${web_image_repository}:sha-${short_sha}"
 
           {
             echo "commit_sha=$commit_sha"
@@ -84,9 +90,11 @@ jobs:
             echo "image_repository=$image_repository"
             echo "image_ref=$image_ref"
             echo "sha_image_ref=$sha_image_ref"
+            echo "web_image_ref=$web_image_ref"
+            echo "web_sha_image_ref=$web_sha_image_ref"
           } >> "$GITHUB_OUTPUT"
 
-          echo "image_ref=$image_ref should_build=$should_build host=${ECS_HOST}"
+          echo "image_ref=$image_ref web_image_ref=$web_image_ref should_build=$should_build host=${ECS_HOST}"
 
       - uses: actions/checkout@v6
         with:
@@ -104,7 +112,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push image
+      - name: Build and push API image
         if: steps.meta.outputs.should_build == 'true'
         uses: docker/build-push-action@v6
         with:
@@ -117,6 +125,20 @@ jobs:
             ${{ steps.meta.outputs.sha_image_ref }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build and push web image
+        if: steps.meta.outputs.should_build == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.web
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.web_image_ref }}
+            ${{ steps.meta.outputs.web_sha_image_ref }}
+          cache-from: type=gha,scope=minikb-web
+          cache-to: type=gha,scope=minikb-web,mode=max
 
       - name: Write SSH key
         env:
@@ -135,6 +157,7 @@ jobs:
       - name: Sync compose and deploy
         env:
           IMAGE_REF: ${{ steps.meta.outputs.image_ref }}
+          WEB_IMAGE_REF: ${{ steps.meta.outputs.web_image_ref }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
         run: |
@@ -155,7 +178,7 @@ jobs:
             -o StrictHostKeyChecking=accept-new
           )
 
-          echo "deploying ${IMAGE_REF} → ${ECS_USER}@${ECS_HOST}:/opt/minikb"
+          echo "deploying ${IMAGE_REF} + ${WEB_IMAGE_REF} → ${ECS_USER}@${ECS_HOST}:/opt/minikb"
 
           "${SSH[@]}" "$ECS_USER@$ECS_HOST" 'install -d /opt/minikb'
           "${SCP[@]}" docker/docker-compose.prod.yml \
@@ -163,6 +186,7 @@ jobs:
 
           remote_env=(
             "IMAGE_REF=$(printf '%q' "$IMAGE_REF")"
+            "WEB_IMAGE_REF=$(printf '%q' "$WEB_IMAGE_REF")"
             "GHCR_USERNAME=$(printf '%q' "$GHCR_USERNAME")"
             "GHCR_READ_TOKEN=$(printf '%q' "$GHCR_READ_TOKEN")"
           )
@@ -173,12 +197,13 @@ jobs:
           cd /opt/minikb
 
           if [[ -f .env ]]; then
-            grep -v '^MINIKB_IMAGE=' .env > .env.release.tmp || true
+            grep -v -E '^(MINIKB_IMAGE=|MINIKB_WEB_IMAGE=)' .env > .env.release.tmp || true
             mv .env.release.tmp .env
           else
             touch .env
           fi
           printf 'MINIKB_IMAGE=%s\n' "$IMAGE_REF" >> .env
+          printf 'MINIKB_WEB_IMAGE=%s\n' "$WEB_IMAGE_REF" >> .env
 
           printf '%s' "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
@@ -194,20 +219,34 @@ jobs:
           ok=0
           for i in $(seq 1 40); do
             if curl -fsS --max-time 3 "http://127.0.0.1:${MINIKB_PORT:-8080}/health/live" >/tmp/minikb-health.json; then
-              echo "health ok after ${i} attempt(s): $(cat /tmp/minikb-health.json)"
+              echo "api health ok after ${i} attempt(s): $(cat /tmp/minikb-health.json)"
               ok=1
               break
             fi
-            echo "waiting for minikb health (${i}/40)..."
+            echo "waiting for minikb api health (${i}/40)..."
             sleep 3
           done
           if [[ "$ok" -ne 1 ]]; then
-            echo "minikb health check failed; recent logs:"
+            echo "minikb api health check failed; recent logs:"
             docker logs minikb-web --tail 120 || true
             exit 1
           fi
-          curl -fsS -o /dev/null -w "local ui %{http_code}\n" \
-            "http://127.0.0.1:${MINIKB_PORT:-8080}/ui/" || true
+
+          web_ok=0
+          for i in $(seq 1 40); do
+            if curl -fsS --max-time 3 "http://127.0.0.1:3000/api/health" >/tmp/minikb-web-health.json; then
+              echo "frontend health ok after ${i} attempt(s): $(cat /tmp/minikb-web-health.json)"
+              web_ok=1
+              break
+            fi
+            echo "waiting for minikb frontend health (${i}/40)..."
+            sleep 3
+          done
+          if [[ "$web_ok" -ne 1 ]]; then
+            echo "minikb frontend health check failed; recent logs:"
+            docker logs minikb-frontend --tail 120 || true
+            exit 1
+          fi
           REMOTE
 
   notify-serverlessship:
