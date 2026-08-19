@@ -7,7 +7,7 @@ Knowledge base platform for agents — docs, chunking, retrieval and QA in one p
 * 承载文档摄入、切片、向量化、检索（vector / keyword / hybrid + rerank）、RAG 问答与评估
 * 独立服务，通过 REST 与 [minibot](https://github.com/liuyidi/minibot) 等消费方集成
 
-架构与实施计划见 [`docs/`](./docs)。
+架构与实施计划见 [`docs/`](./docs)。生产 `kb.liuyidi.me` 由 nginx 把 `/v1` 转到 FastAPI、`/` 转到 Next standalone；见 [`docs/superpowers/specs/2026-08-18-nextjs-nginx-split-design.md`](docs/superpowers/specs/2026-08-18-nextjs-nginx-split-design.md)。
 
 ## Quick start
 
@@ -24,15 +24,19 @@ uv sync
 cp .env.example .env
 # 视需要编辑 .env（本地默认可直接跑）
 
-# 4. 起服务
+# 4. 起 API
 uv run uvicorn minikb.main:app --reload --port 8080
 
-# 5. 验证
+# 5. 起 Next 管理端（另开终端；开发时把 /v1 反代到 :8080）
+cd web && MINIKB_AUTH_DISABLED=true npm install && npm run dev
+
+# 6. 验证
 curl -s http://127.0.0.1:8080/health
+curl -s http://127.0.0.1:3000/api/health
 ```
 
 访问：
-- **Dev UI**: <http://127.0.0.1:8080/ui/>
+- **Dev UI**: <http://127.0.0.1:3000> (`MINIKB_AUTH_DISABLED=true` 可跳过 mini-auth)
 - **API Docs**: <http://127.0.0.1:8080/docs>
 - **MinIO Console**: <http://127.0.0.1:9001> (`minioadmin` / `minioadmin`)
 
