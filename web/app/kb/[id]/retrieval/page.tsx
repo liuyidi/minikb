@@ -2,8 +2,11 @@
 
 import { use, useState } from "react";
 import { useLocale } from "@/app/providers";
-import { Button } from "@/components/Button";
-import { Card, EmptyState, FormGroup, PageHeader, PageShell, inputStyle } from "@/components/ui";
+import { Button } from "@minikb/ui/components/ui/button";
+import { FormGroup, PageHeader, PageShell } from "@minikb/ui/components/ui/page";
+import { Card } from "@minikb/ui/components/ui/card";
+import { EmptyState } from "@minikb/ui/components/ui/empty";
+import { inputClassName as inputStyle } from "@minikb/ui/lib/field-styles";
 import { api, apiErrorMessage } from "@/lib/api";
 
 type Hit = {
@@ -71,7 +74,7 @@ export default function RetrievalPage({ params }: { params: Promise<{ id: string
 
       <Card>
         <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-          <select style={{ ...inputStyle, width: "auto" }} value={mode} onChange={(e) => setMode(e.target.value)}>
+          <select className={inputStyle} style={{ width: "auto" }} value={mode} onChange={(e) => setMode(e.target.value)}>
             <option value="vector">vector</option>
             <option value="keyword">keyword</option>
             <option value="hybrid">hybrid</option>
@@ -83,7 +86,8 @@ export default function RetrievalPage({ params }: { params: Promise<{ id: string
           {rerank ? (
             <>
               <select
-                style={{ ...inputStyle, width: "auto" }}
+                className={inputStyle}
+                style={{ width: "auto" }}
                 value={rerankProvider}
                 onChange={(e) => setRerankProvider(e.target.value)}
               >
@@ -99,7 +103,8 @@ export default function RetrievalPage({ params }: { params: Promise<{ id: string
                   max={50}
                   value={topN}
                   onChange={(e) => setTopN(parseInt(e.target.value, 10) || 5)}
-                  style={{ ...inputStyle, width: 72 }}
+                  className={inputStyle}
+                  style={{ width: 72 }}
                 />
               </label>
             </>
@@ -107,7 +112,8 @@ export default function RetrievalPage({ params }: { params: Promise<{ id: string
         </div>
         <FormGroup label={t("ret.query")}>
           <textarea
-            style={{ ...inputStyle, height: "auto", minHeight: 80, padding: "10px 12px" }}
+            className={inputStyle}
+            style={{ height: "auto", minHeight: 80, padding: "10px 12px" }}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />

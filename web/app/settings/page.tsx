@@ -2,8 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLocale } from "@/app/providers";
-import { Button } from "@/components/Button";
-import { Badge, Card, EmptyState, PageHeader, PageShell, inputStyle } from "@/components/ui";
+import { Button } from "@minikb/ui/components/ui/button";
+import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
+import { Badge } from "@minikb/ui/components/ui/badge";
+import { Card } from "@minikb/ui/components/ui/card";
+import { EmptyState } from "@minikb/ui/components/ui/empty";
+import { inputClassName as inputStyle } from "@minikb/ui/lib/field-styles";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/locale";
 
@@ -70,7 +74,8 @@ export default function SystemSettingsPage() {
         </label>
         <select
           id="sys-locale"
-          style={{ ...inputStyle, width: 220 }}
+          className={inputStyle}
+          style={{ width: 220 }}
           value={locale}
           onChange={(e) => setLocale(e.target.value as Locale)}
         >
@@ -84,7 +89,8 @@ export default function SystemSettingsPage() {
         <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--mini-color-muted)" }}>{t("sys.apiKeyHint")}</p>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           <input
-            style={{ ...inputStyle, flex: 1 }}
+            className={inputStyle}
+            style={{ flex: 1 }}
             placeholder={t("sys.keyName")}
             value={keyName}
             onChange={(e) => setKeyName(e.target.value)}

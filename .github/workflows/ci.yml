@@ -79,7 +79,11 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: |
+            web/package-lock.json
+            packages/ui/package-lock.json
+      - run: npm ci
+        working-directory: packages/ui
       - run: npm ci
       - run: npm test
       - run: npm run lint

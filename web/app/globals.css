@@ -1,10 +1,11 @@
-@import "../styles/mini-brand.tokens.css";
+@import "@minikb/ui/styles/bridge.css";
+@import "@minikb/ui/styles/base.css";
 @import "tailwindcss";
 
 html,
 body {
-  background: var(--mini-color-canvas);
-  color: var(--mini-color-ink);
+  background: var(--background);
+  color: var(--foreground);
   font-family: var(--mini-font-sans);
   min-height: 100%;
 }
@@ -15,6 +16,6 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--mini-color-focus);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }

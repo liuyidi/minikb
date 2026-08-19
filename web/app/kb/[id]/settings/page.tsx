@@ -3,8 +3,10 @@
 import { use, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/app/providers";
-import { Button } from "@/components/Button";
-import { Card, PageHeader, PageShell, inputStyle, textareaStyle } from "@/components/ui";
+import { Button } from "@minikb/ui/components/ui/button";
+import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
+import { Card } from "@minikb/ui/components/ui/card";
+import { inputClassName as inputStyle, textareaClassName as textareaStyle } from "@minikb/ui/lib/field-styles";
 import { api, apiErrorMessage } from "@/lib/api";
 
 type KbSettings = {
@@ -104,10 +106,11 @@ export default function KbSettingsPage({ params }: { params: Promise<{ id: strin
       <Card>
         <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>{t("set.general")}</h2>
         <label style={{ display: "block", fontSize: 13, marginBottom: 6 }}>{t("field.name")}</label>
-        <input style={{ ...inputStyle, marginBottom: 12 }} value={name} onChange={(e) => setName(e.target.value)} />
+        <input className={inputStyle} style={{ marginBottom: 12 }} value={name} onChange={(e) => setName(e.target.value)} />
         <label style={{ display: "block", fontSize: 13, marginBottom: 6 }}>{t("field.desc")}</label>
         <textarea
-          style={{ ...textareaStyle, marginBottom: 12 }}
+          className={textareaStyle}
+          style={{ marginBottom: 12 }}
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -115,7 +118,7 @@ export default function KbSettingsPage({ params }: { params: Promise<{ id: strin
         <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
           <div style={{ flex: 1 }}>
             <label style={{ display: "block", fontSize: 13, marginBottom: 6 }}>Kind</label>
-            <select style={inputStyle} value={kind} onChange={(e) => setKind(e.target.value)}>
+            <select className={inputStyle} value={kind} onChange={(e) => setKind(e.target.value)}>
               <option value="general">General</option>
               <option value="code_sandbox">Code Sandbox</option>
               <option value="wiki">Wiki</option>
@@ -123,7 +126,7 @@ export default function KbSettingsPage({ params }: { params: Promise<{ id: strin
           </div>
           <div style={{ flex: 1 }}>
             <label style={{ display: "block", fontSize: 13, marginBottom: 6 }}>Visibility</label>
-            <select style={inputStyle} value={visibility} onChange={(e) => setVisibility(e.target.value)}>
+            <select className={inputStyle} value={visibility} onChange={(e) => setVisibility(e.target.value)}>
               <option value="private">Private</option>
               <option value="org">Organization</option>
               <option value="public">Public</option>
@@ -137,7 +140,7 @@ export default function KbSettingsPage({ params }: { params: Promise<{ id: strin
 
       <Card>
         <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>{t("set.chunking")}</h2>
-        <select style={inputStyle} value={chunker} onChange={(e) => setChunker(e.target.value)}>
+        <select className={inputStyle} value={chunker} onChange={(e) => setChunker(e.target.value)}>
           <option value="recursive">Recursive</option>
           <option value="heading">By Heading</option>
           <option value="semantic">Semantic</option>

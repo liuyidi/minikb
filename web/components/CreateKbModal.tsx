@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "@/app/providers";
 import { api, apiErrorMessage } from "@/lib/api";
 import { kbPath } from "@/lib/paths";
-import { Button } from "./Button";
-import { Modal } from "./Modal";
-import { FormGroup, inputStyle, textareaStyle } from "./ui";
+import { Button } from "@minikb/ui/components/ui/button";
+import { Modal } from "@minikb/ui/components/ui/modal";
+import { FormGroup } from "@minikb/ui/components/ui/page";
+import { Input } from "@minikb/ui/components/ui/input";
+import { Textarea } from "@minikb/ui/components/ui/textarea";
 
 type CreateKbModalProps = {
   open: boolean;
@@ -71,27 +73,15 @@ export function CreateKbModal({ open, onClose }: CreateKbModalProps) {
       }
     >
       <FormGroup label={t("field.name")}>
-        <input
-          style={inputStyle}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          autoFocus
-        />
+        <Input value={name} onChange={(event) => setName(event.target.value)} autoFocus />
       </FormGroup>
       <FormGroup label={t("field.slug")}>
-        <input style={inputStyle} value={slug} onChange={(event) => setSlug(event.target.value)} />
+        <Input value={slug} onChange={(event) => setSlug(event.target.value)} />
       </FormGroup>
       <FormGroup label={t("field.desc")}>
-        <textarea
-          style={textareaStyle}
-          rows={3}
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
+        <Textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} />
       </FormGroup>
-      {error ? (
-        <p style={{ margin: 0, fontSize: 13, color: "var(--mini-color-danger)" }}>{error}</p>
-      ) : null}
+      {error ? <p className="m-0 text-[13px] text-destructive">{error}</p> : null}
     </Modal>
   );
 }

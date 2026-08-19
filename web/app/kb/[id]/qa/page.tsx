@@ -2,8 +2,11 @@
 
 import { use, useState } from "react";
 import { useLocale } from "@/app/providers";
-import { Button } from "@/components/Button";
-import { Badge, Card, PageHeader, PageShell, inputStyle, statusBadgeVariant } from "@/components/ui";
+import { Button } from "@minikb/ui/components/ui/button";
+import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
+import { Badge } from "@minikb/ui/components/ui/badge";
+import { Card } from "@minikb/ui/components/ui/card";
+import { inputClassName as inputStyle } from "@minikb/ui/lib/field-styles";
 import { api, apiErrorMessage } from "@/lib/api";
 
 type Citation = {
@@ -75,7 +78,7 @@ export default function QaPage({ params }: { params: Promise<{ id: string }> }) 
 
       <Card>
         <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-          <select style={{ ...inputStyle, width: "auto" }} value={mode} onChange={(e) => setMode(e.target.value)}>
+          <select className={inputStyle} style={{ width: "auto" }} value={mode} onChange={(e) => setMode(e.target.value)}>
             <option value="vector">vector</option>
             <option value="keyword">keyword</option>
             <option value="hybrid">hybrid</option>
@@ -88,12 +91,14 @@ export default function QaPage({ params }: { params: Promise<{ id: string }> }) 
               max={50}
               value={topK}
               onChange={(e) => setTopK(parseInt(e.target.value, 10) || 6)}
-              style={{ ...inputStyle, width: 72 }}
+              className={inputStyle}
+              style={{ width: 72 }}
             />
           </label>
         </div>
         <textarea
-          style={{ ...inputStyle, height: "auto", minHeight: 80, padding: "10px 12px", marginBottom: 16, width: "100%" }}
+          className={inputStyle}
+          style={{ height: "auto", minHeight: 80, padding: "10px 12px", marginBottom: 16, width: "100%" }}
           placeholder={t("qa.query")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}

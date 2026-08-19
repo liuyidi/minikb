@@ -2,9 +2,13 @@
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/app/providers";
-import { Button } from "@/components/Button";
-import { Modal } from "@/components/Modal";
-import { Badge, Card, EmptyState, FormGroup, PageHeader, PageShell, inputStyle, statusBadgeVariant, textareaStyle } from "@/components/ui";
+import { Button } from "@minikb/ui/components/ui/button";
+import { Modal } from "@minikb/ui/components/ui/modal";
+import { FormGroup, PageHeader, PageShell, statusBadgeVariant } from "@minikb/ui/components/ui/page";
+import { Badge } from "@minikb/ui/components/ui/badge";
+import { Card } from "@minikb/ui/components/ui/card";
+import { EmptyState } from "@minikb/ui/components/ui/empty";
+import { inputClassName as inputStyle, textareaClassName as textareaStyle } from "@minikb/ui/lib/field-styles";
 import { api, apiErrorMessage } from "@/lib/api";
 
 type DataSource = {
@@ -203,10 +207,10 @@ export default function SourcesPage({ params }: { params: Promise<{ id: string }
         }
       >
         <FormGroup label={t("field.name")}>
-          <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} />
+          <input className={inputStyle} value={name} onChange={(e) => setName(e.target.value)} />
         </FormGroup>
         <FormGroup label={t("field.sourceType")}>
-          <select style={inputStyle} value={kind} onChange={(e) => setKind(e.target.value)}>
+          <select className={inputStyle} value={kind} onChange={(e) => setKind(e.target.value)}>
             <option value="url">URL</option>
             <option value="git">{t("src.kind.git")}</option>
             <option value="sql">{t("src.kind.sql")}</option>
@@ -215,46 +219,46 @@ export default function SourcesPage({ params }: { params: Promise<{ id: string }
         </FormGroup>
         {kind === "url" ? (
           <FormGroup label={t("field.urls")}>
-            <textarea style={textareaStyle} rows={4} value={urls} onChange={(e) => setUrls(e.target.value)} />
+            <textarea className={textareaStyle} rows={4} value={urls} onChange={(e) => setUrls(e.target.value)} />
           </FormGroup>
         ) : null}
         {kind === "git" ? (
           <>
             <FormGroup label={t("field.repo")}>
-              <input style={inputStyle} value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
+              <input className={inputStyle} value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
             </FormGroup>
             <FormGroup label={t("field.branch")}>
-              <input style={inputStyle} value={branch} onChange={(e) => setBranch(e.target.value)} />
+              <input className={inputStyle} value={branch} onChange={(e) => setBranch(e.target.value)} />
             </FormGroup>
           </>
         ) : null}
         {kind === "sql" ? (
           <>
             <FormGroup label={t("field.conn")}>
-              <input style={inputStyle} value={connString} onChange={(e) => setConnString(e.target.value)} />
+              <input className={inputStyle} value={connString} onChange={(e) => setConnString(e.target.value)} />
             </FormGroup>
             <FormGroup label={t("field.sql")}>
-              <textarea style={textareaStyle} rows={3} value={sqlQuery} onChange={(e) => setSqlQuery(e.target.value)} />
+              <textarea className={textareaStyle} rows={3} value={sqlQuery} onChange={(e) => setSqlQuery(e.target.value)} />
             </FormGroup>
           </>
         ) : null}
         {kind === "feishu" ? (
           <>
             <FormGroup label={t("field.entryType")}>
-              <select style={inputStyle} value={feishuEntryType} onChange={(e) => setFeishuEntryType(e.target.value)}>
+              <select className={inputStyle} value={feishuEntryType} onChange={(e) => setFeishuEntryType(e.target.value)}>
                 <option value="space">{t("feishu.space")}</option>
                 <option value="wiki">{t("feishu.wiki")}</option>
                 <option value="docx">{t("feishu.docx")}</option>
               </select>
             </FormGroup>
             <FormGroup label={t("field.feishuToken")}>
-              <input style={inputStyle} value={feishuToken} onChange={(e) => setFeishuToken(e.target.value)} />
+              <input className={inputStyle} value={feishuToken} onChange={(e) => setFeishuToken(e.target.value)} />
             </FormGroup>
             <FormGroup label="App ID">
-              <input style={inputStyle} value={feishuAppId} onChange={(e) => setFeishuAppId(e.target.value)} />
+              <input className={inputStyle} value={feishuAppId} onChange={(e) => setFeishuAppId(e.target.value)} />
             </FormGroup>
             <FormGroup label="App Secret">
-              <input style={inputStyle} type="password" value={feishuAppSecret} onChange={(e) => setFeishuAppSecret(e.target.value)} />
+              <input className={inputStyle} type="password" value={feishuAppSecret} onChange={(e) => setFeishuAppSecret(e.target.value)} />
             </FormGroup>
           </>
         ) : null}

@@ -38,5 +38,6 @@ coverage.xml
 .claude/settings.local.json
 
 web/node_modules/
+packages/ui/node_modules/
 web/.next/
 web/out/

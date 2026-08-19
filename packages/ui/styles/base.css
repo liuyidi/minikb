@@ -1,0 +1,19 @@
+/* Shared base for @minikb/ui consumers (Direction 02). */
+
+.minikb-ui-root {
+  font-family: var(--mini-font-sans);
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

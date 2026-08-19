@@ -2,8 +2,12 @@
 
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/app/providers";
-import { Button } from "@/components/Button";
-import { Badge, Card, EmptyState, PageHeader, PageShell, inputStyle } from "@/components/ui";
+import { Button } from "@minikb/ui/components/ui/button";
+import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
+import { Badge } from "@minikb/ui/components/ui/badge";
+import { Card } from "@minikb/ui/components/ui/card";
+import { EmptyState } from "@minikb/ui/components/ui/empty";
+import { inputClassName as inputStyle } from "@minikb/ui/lib/field-styles";
 import { api } from "@/lib/api";
 
 type ChunkItem = {
@@ -143,7 +147,8 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
 
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
         <select
-          style={{ ...inputStyle, width: "auto", minWidth: 180 }}
+          className={inputStyle}
+          style={{ width: "auto", minWidth: 180 }}
           value={docId}
           onChange={(e) => { setDocId(e.target.value); setPage(0); }}
         >
@@ -155,7 +160,8 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
           ))}
         </select>
         <input
-          style={{ ...inputStyle, flex: 1, minWidth: 200 }}
+          className={inputStyle}
+          style={{ flex: 1, minWidth: 200 }}
           placeholder={t("chunk.search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}

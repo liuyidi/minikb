@@ -6,7 +6,10 @@ import { useLocale } from "@/app/providers";
 import { api } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
 import { kbPath } from "@/lib/paths";
-import { Badge, Card, EmptyState, PageHeader, PageShell, statusBadgeVariant } from "@/components/ui";
+import { PageHeader, PageShell, statusBadgeVariant } from "@minikb/ui/components/ui/page";
+import { Badge } from "@minikb/ui/components/ui/badge";
+import { Card } from "@minikb/ui/components/ui/card";
+import { EmptyState } from "@minikb/ui/components/ui/empty";
 
 type KbItem = {
   id: string;

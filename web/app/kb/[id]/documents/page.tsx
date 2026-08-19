@@ -3,9 +3,12 @@
 import { notFound } from "next/navigation";
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/app/providers";
-import { Button } from "@/components/Button";
-import { Modal } from "@/components/Modal";
-import { Badge, Card, EmptyState, PageHeader, PageShell, statusBadgeVariant } from "@/components/ui";
+import { Button } from "@minikb/ui/components/ui/button";
+import { Modal } from "@minikb/ui/components/ui/modal";
+import { PageHeader, PageShell, statusBadgeVariant } from "@minikb/ui/components/ui/page";
+import { Badge } from "@minikb/ui/components/ui/badge";
+import { Card } from "@minikb/ui/components/ui/card";
+import { EmptyState } from "@minikb/ui/components/ui/empty";
 import { api } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
 

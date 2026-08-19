@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "styles/bridge.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@minikb/ui/components",
+    "ui": "@minikb/ui/components/ui",
+    "hooks": "@minikb/ui/hooks",
+    "lib": "@minikb/ui/lib",
+    "utils": "@minikb/ui/lib/utils"
+  }
+}

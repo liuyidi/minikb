@@ -30,6 +30,7 @@ on:
       - "docker/Dockerfile.web"
       - "docker/docker-compose.prod.yml"
       - "web/**"
+      - "packages/ui/**"
       - ".github/workflows/publish-volcengine-minikb.yml"
 
 concurrency:

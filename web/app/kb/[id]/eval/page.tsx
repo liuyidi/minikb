@@ -2,8 +2,11 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import { useLocale } from "@/app/providers";
-import { Button } from "@/components/Button";
-import { Badge, Card, EmptyState, PageHeader, PageShell } from "@/components/ui";
+import { Button } from "@minikb/ui/components/ui/button";
+import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
+import { Badge } from "@minikb/ui/components/ui/badge";
+import { Card } from "@minikb/ui/components/ui/card";
+import { EmptyState } from "@minikb/ui/components/ui/empty";
 import { api, apiErrorMessage } from "@/lib/api";
 
 type Dataset = {
