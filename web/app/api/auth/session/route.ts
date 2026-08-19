@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const { sessionSecret } = authEnv();
     const payload = await verifySession(cookie, sessionSecret);
-    if (!payload) {
+    if (!payload || Math.floor(Date.now() / 1000) > payload.expires_at) {
       return NextResponse.json({ authenticated: false });
     }
 

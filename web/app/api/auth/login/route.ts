@@ -10,7 +10,15 @@ import {
 } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
-  const { issuer, clientId, redirectUri } = authEnv();
+  let issuer: string;
+  let clientId: string;
+  let redirectUri: string;
+  try {
+    ({ issuer, clientId, redirectUri } = authEnv());
+  } catch {
+    return NextResponse.redirect(new URL("/?error=config", request.url));
+  }
+
   const nextParam = request.nextUrl.searchParams.get("next") ?? "/";
   const safeNext = isSafeNextPath(nextParam) ? nextParam : "/";
 

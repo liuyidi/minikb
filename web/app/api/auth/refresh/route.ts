@@ -15,9 +15,8 @@ export async function POST(request: NextRequest) {
 
   let sessionSecret: string;
   let issuer: string;
-  let clientId: string;
   try {
-    ({ sessionSecret, issuer, clientId } = authEnv());
+    ({ sessionSecret, issuer } = authEnv());
   } catch {
     return NextResponse.json({ error: "misconfigured" }, { status: 500 });
   }
@@ -27,14 +26,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "invalid session" }, { status: 401 });
   }
 
-  const tokenResp = await fetch(`${issuerBase(issuer)}/oauth/token`, {
+  const tokenResp = await fetch(`${issuerBase(issuer)}/api/v1/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      grant_type: "refresh_token",
-      refresh_token: payload.refresh_token,
-      client_id: clientId,
-    }),
+    body: JSON.stringify({ refresh_token: payload.refresh_token }),
   });
 
   if (!tokenResp.ok) {
