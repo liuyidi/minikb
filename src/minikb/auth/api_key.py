@@ -12,6 +12,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from minikb.auth.jwt_access import decode_mini_auth_access_token
 from minikb.config.settings import get_settings
 from minikb.db import ApiKey, get_session
 
@@ -58,6 +59,20 @@ async def get_api_key_from_header(
         return None
 
     token = credentials.credentials
+    if looks_like_jwt(token):
+        payload = decode_mini_auth_access_token(token)
+        sub = str(payload.get("sub") or "")
+        if not sub:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid access token",
+            )
+        async for session in get_session():
+            from minikb.api.deps import get_or_create_default_org
+
+            org = await get_or_create_default_org(session)
+            return create_jwt_api_key(sub=sub, org_id=org.id)
+
     async for session in get_session():
         # Find by prefix first (optimization)
         prefix = token[:8] if len(token) >= 8 else token
@@ -68,13 +83,7 @@ async def get_api_key_from_header(
         result = await session.execute(stmt)
         api_key = result.scalar_one_or_none()
 
-        if api_key is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid API key",
-            )
-
-        if not verify_secret(token, api_key.hashed_secret):
+        if api_key is None or not verify_secret(token, api_key.hashed_secret):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid API key",
@@ -111,6 +120,22 @@ def create_dev_api_key() -> ApiKey:
         prefix="dev",
         hashed_secret="",
         name="dev-mode",
+        scopes={"kb:read", "kb:write", "kb:admin", "retrieve", "qa", "ingest"},
+        disabled=False,
+    )
+
+
+def looks_like_jwt(token: str) -> bool:
+    return token.count(".") == 2
+
+
+def create_jwt_api_key(*, sub: str, org_id: uuid.UUID) -> ApiKey:
+    return ApiKey(
+        id=uuid.uuid4(),
+        org_id=org_id,
+        prefix="jwt",
+        hashed_secret="",
+        name=f"jwt:{sub}",
         scopes={"kb:read", "kb:write", "kb:admin", "retrieve", "qa", "ingest"},
         disabled=False,
     )

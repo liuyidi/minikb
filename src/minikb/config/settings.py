@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     # --- Auth ---
     default_org_slug: str = "default"
     require_api_key: bool = False  # 开发默认关；prod 强制开
+    jwt_secret: str = ""
+    jwt_issuer: str = "https://auth.liuyidi.me"
+    jwt_audience: str = "mini-auth"
 
     # --- Ingest ---
     ingest_queue_default: str = "cpu"
