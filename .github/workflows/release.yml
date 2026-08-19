@@ -1,7 +1,7 @@
 name: Release
 
-# Prefer publish-volcengine-minikb.yml for routine deploys.
-# Kept for manual rollback / redeploy of an existing GHCR tag.
+# Deprecated GHCR pull path. Routine deploys: publish-volcengine-minikb.yml
+# (rsync + on-host docker compose build). Do not use this workflow.
 
 on:
   workflow_dispatch:

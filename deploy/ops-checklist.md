@@ -4,20 +4,19 @@ Use this when the server is already bootstrapped and you want the fastest path t
 
 ## Where things live
 
-- Deployment root: `/opt/minikb`
-- Server env file: `/opt/minikb/.env`
-- Compose file: `/opt/minikb/docker-compose.prod.yml`
+- Deployment root: `/opt/minikb` (app source + compose)
+- Server env file: `/opt/minikb/.env` (not overwritten by rsync)
+- Compose file: `/opt/minikb/docker/docker-compose.prod.yml`
+- Build/restart: `/opt/minikb/deploy/remote-build.sh`
 - API (compose `web`): `http://127.0.0.1:8080/health/live`
 - Next (compose `frontend`): `http://127.0.0.1:3000/api/health`
 - Public TLS: host nginx `kb.liuyidi.me` → `/v1` and `/health` to `:8080`, `/` to `:3000`
-
-Until frontend is healthy, nginx may still point `/` at `:8080/ui` (dual-run).
 
 ## Quick status checks
 
 ```bash
 cd /opt/minikb
-docker compose --env-file .env -f docker-compose.prod.yml ps
+docker compose --project-name minikb --env-file .env -f docker/docker-compose.prod.yml ps
 curl --fail --silent --show-error http://127.0.0.1:8080/health/live
 curl --fail --silent --show-error http://127.0.0.1:3000/api/health
 curl --fail --silent --show-error https://kb.liuyidi.me/health
@@ -28,50 +27,39 @@ systemctl is-active nginx
 
 ```bash
 cd /opt/minikb
-docker compose --env-file .env -f docker-compose.prod.yml logs -f web
-docker compose --env-file .env -f docker-compose.prod.yml logs -f frontend
-docker compose --env-file .env -f docker-compose.prod.yml logs -f worker
-docker compose --env-file .env -f docker-compose.prod.yml logs -f postgres
+docker compose --project-name minikb --env-file .env -f docker/docker-compose.prod.yml logs -f web
+docker compose --project-name minikb --env-file .env -f docker/docker-compose.prod.yml logs -f frontend
+docker compose --project-name minikb --env-file .env -f docker/docker-compose.prod.yml logs -f worker
 ```
 
-## Restart the app layer
+## Restart without rebuild
 
 ```bash
 cd /opt/minikb
-docker compose --env-file .env -f docker-compose.prod.yml up -d --pull never web frontend worker
+docker compose --project-name minikb --env-file .env -f docker/docker-compose.prod.yml up -d --pull never --no-build
 ```
 
-## Refresh from GHCR
+## Refresh (on-host build)
 
-When a new image has been published by the release workflow:
+Do **not** `docker compose pull` for `web` / `frontend` / `worker`. Build locally:
 
 ```bash
-cd /opt/minikb
-docker compose --env-file .env -f docker-compose.prod.yml pull
-docker compose --env-file .env -f docker-compose.prod.yml up -d
+bash /opt/minikb/deploy/remote-build.sh
 ```
 
 ## Roll back
 
-Set **both** image tags to a known-good `sha-<shortsha>`:
-
-```bash
-export MINIKB_IMAGE=ghcr.io/liuyidi/minikb:sha-<shortsha>
-export MINIKB_WEB_IMAGE=ghcr.io/liuyidi/minikb-web:sha-<shortsha>
-cd /opt/minikb
-docker compose --env-file .env -f docker-compose.prod.yml pull
-docker compose --env-file .env -f docker-compose.prod.yml up -d
-```
+Rsync or check out a known-good tree into `/opt/minikb` (keep `.env`), then `remote-build.sh`.
 
 ## If the host is out of memory
 
-First reduce worker pressure before touching the database or MinIO:
+The host is ~4G. `remote-build.sh` stops `worker`/`frontend` during image build. If a build still OOMs:
 
 - lower `MINIKB_INGEST_CONCURRENCY`
 - lower `MINIKB_WEB_WORKERS`
-- keep Postgres and MinIO unchanged unless there is a proven leak
+- do not add extra compose services while building
 
 ## Current deployment mode
 
-- API image: `ghcr.io/liuyidi/minikb:latest` (`MINIKB_IMAGE`)
-- Frontend image: `ghcr.io/liuyidi/minikb-web:latest` (`MINIKB_WEB_IMAGE`)
+- API/worker image: `minikb:local` (built from `docker/Dockerfile.ecs`)
+- Frontend image: `minikb-web:local` (built from `docker/Dockerfile.web`)

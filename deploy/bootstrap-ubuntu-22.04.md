@@ -40,18 +40,9 @@ Recommended SSH hardening:
 - allow only key-based SSH access
 - keep the private deploy key in GitHub Secrets as `ECS_SSH_KEY`
 
-## 4. Create the deployment directory
+## 4. Sync the application tree
 
-```bash
-sudo mkdir -p /opt/minikb
-sudo chown -R "$USER":"$USER" /opt/minikb
-```
-
-Copy the production compose file into place:
-
-```bash
-cp docker/docker-compose.prod.yml /opt/minikb/docker-compose.prod.yml
-```
+`/opt/minikb` is the git/rsync checkout (compose lives at `docker/docker-compose.prod.yml`). Keep `.env` out of rsync.
 
 ## 5. Create the runtime env file
 
@@ -63,34 +54,25 @@ Store the server-side env file at:
 
 Start from [`.env.example`](../.env.example) and fill in:
 
-- `MINIKB_IMAGE`
 - `MINIKB_POSTGRES_PASSWORD`
 - `MINIKB_S3_ACCESS_KEY`
 - `MINIKB_S3_SECRET_KEY`
 - `MINIKB_OPENAI_API_KEY`
+- `MINIKB_JWT_SECRET`
+- `MINIKB_SESSION_SECRET`
 - any host-specific port overrides
 
-## 6. Verify GHCR pull access
+Do not set `MINIKB_IMAGE` / `MINIKB_WEB_IMAGE`.
 
-The ECS needs a GHCR read token before `docker compose pull` can work.
-
-Use a token stored in GitHub Secrets as `GHCR_READ_TOKEN` and log in on the host:
+## 6. Bring up the stack (on-host build)
 
 ```bash
-printf '%s' "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+bash /opt/minikb/deploy/remote-build.sh
 ```
 
-If the login succeeds, the host can pull `ghcr.io/<owner>/minikb:*` images.
+Do not `docker compose pull` app images from GHCR.
 
-## 7. Bring up the stack
-
-```bash
-cd /opt/minikb
-docker compose --env-file .env -f docker-compose.prod.yml pull
-docker compose --env-file .env -f docker-compose.prod.yml up -d
-```
-
-## 8. Confirm the persistent volumes
+## 7. Confirm the persistent volumes
 
 The compose project creates these Docker volumes:
 
@@ -100,7 +82,7 @@ The compose project creates these Docker volumes:
 
 Optional monitoring also uses `minikb_prometheus_data`.
 
-## 9. Validate health
+## 8. Validate health
 
 ```bash
 curl --fail --silent --show-error http://127.0.0.1:8080/health/live

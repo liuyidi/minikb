@@ -1,10 +1,13 @@
 # Production docker-compose for minikb
-# Usage:
-#   docker compose -f docker/docker-compose.prod.yml up -d
+# Usage (from repo root /opt/minikb):
+#   docker compose --env-file .env -f docker/docker-compose.prod.yml up -d --build --pull never
 #
+# Images are built on the host (Aliyun-style). Do not docker compose pull app images.
 # web = FastAPI API; frontend = Next standalone; worker = ingest.
 
-x-minikb-image: &minikb_image ${MINIKB_IMAGE:-ghcr.io/<owner>/minikb:latest}
+name: minikb
+
+x-minikb-image: &minikb_image minikb:local
 
 services:
   # ─── Infrastructure ────────────────────────────────────────────
@@ -107,6 +110,9 @@ services:
 
   web:
     image: *minikb_image
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ecs
     container_name: minikb-web
     restart: unless-stopped
     depends_on:
@@ -206,7 +212,10 @@ services:
   # ─── Next admin (standalone) ───────────────────────────────────
 
   frontend:
-    image: ${MINIKB_WEB_IMAGE:?set MINIKB_WEB_IMAGE}
+    image: minikb-web:local
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
     container_name: minikb-frontend
     restart: unless-stopped
     ports:

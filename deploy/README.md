@@ -1,6 +1,6 @@
 # minikb deployment
 
-Production bootstrap and rollback for the **Volcengine** GHCR + compose flow.
+Production bootstrap for the **Volcengine** on-host build flow.
 Public URL `https://kb.liuyidi.me` terminates TLS on **this host**. nginx splits
 `/v1` and `/health` to FastAPI (`127.0.0.1:8080`) and `/` to Next (`127.0.0.1:3000`).
 DNS A record points at `101.96.224.232`; Aliyun is not in the path.
@@ -11,23 +11,23 @@ DNS A record points at `101.96.224.232`; Aliyun is not in the path.
 - [Rollback](./rollback.md)
 - [Ops checklist](./ops-checklist.md)
 - [Host nginx TLS (`kb.liuyidi.me`)](./nginx.kb.liuyidi.me.conf.example)
+- [Remote build](./remote-build.sh)
 
 ## Production contract
 
 - Compose file: [`docker/docker-compose.prod.yml`](../docker/docker-compose.prod.yml)
 - Environment template: [`.env.example`](../.env.example)
-- Publish workflow: [`.github/workflows/publish-volcengine-minikb.yml`](../.github/workflows/publish-volcengine-minikb.yml)
-- Manual redeploy / rollback tag: [`.github/workflows/release.yml`](../.github/workflows/release.yml) (`workflow_dispatch` only)
+- Publish workflow: [`.github/workflows/publish-volcengine-minikb.yml`](../.github/workflows/publish-volcengine-minikb.yml) (rsync + `remote-build.sh`)
 
 ## Runtime layout (Volcengine)
 
-- Deployment root: `/opt/minikb`
-- Server-side env file: `/opt/minikb/.env`
-- Compose file on the host: `/opt/minikb/docker-compose.prod.yml`
+- Deployment root: `/opt/minikb` (source tree; `.env` is not rsynced)
+- Compose file on the host: `/opt/minikb/docker/docker-compose.prod.yml`
 - Host nginx: `/etc/nginx/sites-enabled/kb.liuyidi.me` (TLS; `/v1` → `:8080`, `/` → `:3000`)
-- Persistent volumes: `minikb_pgdata`, `minikb_redisdata`, `minikb_miniodata`, …
+- Persistent volumes: `minikb_minikb_pgdata`, `minikb_minikb_redisdata`, `minikb_minikb_miniodata`
 
 ## Do not
 
-- Do not run minikb inside `mini-langfuse/deploy/demo` on Aliyun anymore.
-- Do not use `./up.sh kb` on the demo ECS; that path was removed.
+- Do not `docker compose pull` `web` / `frontend` / `worker` from GHCR.
+- Do not run minikb inside Aliyun demo compose.
+- Do not use `./up.sh kb` on the demo ECS.

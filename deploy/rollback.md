@@ -1,35 +1,19 @@
 # Rollback
 
-Rollback re-points the ECS to already published GHCR images. It does not rebuild anything.
+Rollback rebuilds a previous source tree on the host. It does not pull GHCR.
 
-## 1. Pick known-good image tags
+## 1. Put a known-good tree on the host
 
-Prefer immutable tags for **both** images:
+Keep `/opt/minikb/.env`. Replace the rest of `/opt/minikb` with the commit you want (rsync from a checkout, or restore files). Do not `docker compose pull` app images.
 
-```bash
-sha-<shortsha>
-```
-
-API and frontend tags can differ if only one side needs rollback.
-
-## 2. Update the host env
-
-Edit `/opt/minikb/.env` and set:
+## 2. Rebuild and restart
 
 ```bash
-MINIKB_IMAGE=ghcr.io/liuyidi/minikb:sha-<shortsha>
-MINIKB_WEB_IMAGE=ghcr.io/liuyidi/minikb-web:sha-<shortsha>
+ssh -i deploy/volcengine-minikb.pem root@101.96.224.232 \
+  'bash /opt/minikb/deploy/remote-build.sh'
 ```
 
-## 3. Pull and restart
-
-```bash
-cd /opt/minikb
-docker compose --env-file .env -f docker-compose.prod.yml pull
-docker compose --env-file .env -f docker-compose.prod.yml up -d
-```
-
-## 4. Verify service health
+## 3. Verify service health
 
 ```bash
 curl --fail --silent --show-error http://127.0.0.1:8080/health/live
@@ -38,7 +22,5 @@ curl --fail --silent --show-error http://127.0.0.1:3000/api/health
 
 ## Notes
 
-- The rollback path reuses the same compose project.
-- No image build or republish is needed.
-- The `latest` tag can be used for forward redeploys, but rollback should prefer `sha-<shortsha>`.
-- nginx config is independent: you can keep `/` on Next while rolling back only the API image (or vice versa).
+- Project name is pinned to `minikb` so volumes (`minikb_minikb_pgdata`, …) stay attached.
+- nginx config is independent of the app images.
