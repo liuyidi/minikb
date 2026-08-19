@@ -4,6 +4,7 @@ export const messages: Record<Locale, Record<string, string>> = {
   "zh-CN": {
     subtitle: "面向 Agent 的知识库平台",
     "lang.label": "语言",
+    "auth.logout": "退出登录",
     "nav.home": "首页",
     "nav.content": "内容",
     "nav.intel": "智能",
@@ -151,6 +152,7 @@ export const messages: Record<Locale, Record<string, string>> = {
   en: {
     subtitle: "Knowledge Base Platform for Agents",
     "lang.label": "Language",
+    "auth.logout": "Sign out",
     "nav.home": "Home",
     "nav.content": "Content",
     "nav.intel": "Intelligence",

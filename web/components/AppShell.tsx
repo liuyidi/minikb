@@ -251,6 +251,20 @@ export function AppShell({ children }: { children: ReactNode }) {
             <option value="zh-CN">简体中文</option>
             <option value="en">English</option>
           </select>
+          <a
+            href="/api/auth/logout"
+            style={{
+              display: "block",
+              marginTop: 12,
+              padding: "10px 12px",
+              borderRadius: "var(--mini-radius-control)",
+              fontSize: 14,
+              color: "var(--mini-color-muted)",
+              textAlign: "left",
+            }}
+          >
+            {t("auth.logout")}
+          </a>
         </div>
       </aside>
 
