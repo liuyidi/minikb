@@ -6,8 +6,16 @@ import { Button } from "@minikb/ui/components/ui/button";
 import { FormGroup, PageHeader, PageShell } from "@minikb/ui/components/ui/page";
 import { Card } from "@minikb/ui/components/ui/card";
 import { EmptyState } from "@minikb/ui/components/ui/empty";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@minikb/ui/components/ui/select";
 import { inputClassName as inputStyle } from "@minikb/ui/lib/field-styles";
 import { api, apiErrorMessage } from "@/lib/api";
+import { RERANK_PROVIDER_ITEMS, RETRIEVAL_MODE_ITEMS } from "@/lib/form-options";
 
 type Hit = {
   score: number;
@@ -73,28 +81,45 @@ export default function RetrievalPage({ params }: { params: Promise<{ id: string
       <PageHeader title={t("ret.title")} />
 
       <Card>
-        <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-          <select className={inputStyle} style={{ width: "auto" }} value={mode} onChange={(e) => setMode(e.target.value)}>
-            <option value="vector">vector</option>
-            <option value="keyword">keyword</option>
-            <option value="hybrid">hybrid</option>
-          </select>
+        <div className="mb-4 flex flex-wrap gap-3">
+          <Select
+            items={[...RETRIEVAL_MODE_ITEMS]}
+            value={mode}
+            onValueChange={(value) => setMode(String(value))}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RETRIEVAL_MODE_ITEMS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
             <input type="checkbox" checked={rerank} onChange={(e) => setRerank(e.target.checked)} />
             {t("ret.rerank")}
           </label>
           {rerank ? (
             <>
-              <select
-                className={inputStyle}
-                style={{ width: "auto" }}
+              <Select
+                items={[...RERANK_PROVIDER_ITEMS]}
                 value={rerankProvider}
-                onChange={(e) => setRerankProvider(e.target.value)}
+                onValueChange={(value) => setRerankProvider(String(value))}
               >
-                <option value="mock">mock</option>
-                <option value="bm25">bm25</option>
-                <option value="cohere">cohere</option>
-              </select>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RERANK_PROVIDER_ITEMS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
                 {t("ret.topn")}
                 <input

@@ -1,0 +1,72 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Introduction" />
+
+# `@minikb/ui`
+
+**Direction 02** React component kit — incubating in [minikb](https://github.com/liuyidi/minikb) (`packages/ui`).
+
+Light-only canvas, near-black ink, `--mini-*` brand tokens bridged to shadcn-style semantic CSS variables. Consumed by `web/` via `"@minikb/ui": "file:../packages/ui"`.
+
+## Quick start
+
+```bash
+cd packages/ui
+npm install
+npm run storybook   # http://127.0.0.1:6006
+```
+
+```tsx
+import { Button } from "@minikb/ui/components/ui/button";
+import "@minikb/ui/styles/mini-brand.tokens.css";
+import "@minikb/ui/styles/bridge.css";
+```
+
+## Sidebar guide
+
+| Section | What you'll find |
+| --- | --- |
+| **主题** | Direction 02 tokens — brand (`--mini-*`), semantic bridge, typography, dimensions, mapping |
+| **图标** | Lucide gallery — search, copy import path, size/color preview |
+| **图表** | Recharts examples ([shadcn/ui charts](https://ui.shadcn.com/charts/area) style): Area, Line, Bar, Pie, Tooltips |
+| **Components** | UI primitives, grouped below |
+
+### Component groups
+
+| Group | Examples |
+| --- | --- |
+| **表单** | Button, Input, Select, Field, DatePicker, TimePicker, RangeDatePicker, … |
+| **反馈** | Alert, Dialog, AlertDialog, Sonner, Progress, Spinner |
+| **布局** | Card, Separator, Tabs, Page, Breadcrumb |
+| **数据展示** | Table, DataTable, Badge, Markdown, Calendar |
+| **浮层** | Popover, Tooltip, DropdownMenu, Command, Modal |
+
+Entry titles use **English + Chinese** (e.g. `Button 按钮`, `DatePicker 日期选择`). Story copy may use Chinese.
+
+Open a component's **Docs** tab for props / API tables where available.
+
+## Package layout
+
+| Layer | Path |
+| --- | --- |
+| Brand tokens (`--mini-*`) | `styles/mini-brand.tokens.css` |
+| Semantic bridge | `styles/bridge.css` |
+| Base styles | `styles/base.css` |
+| Components | `components/ui/*`, `components/common/*` |
+| Markdown | `markdown/` |
+| Utils | `lib/utils.ts`, `lib/popup-styles.ts` |
+
+Design spec: `minikb/docs/superpowers/specs/2026-08-19-minikb-ui-kit-design.md`
+
+## Brand & mockups
+
+Landing / Auth / Dashboard **direction previews** live in [mini-design-system](https://github.com/liuyidi/mini-design-system) — not duplicated here.
+
+This Storybook focuses on **interactive components** and **token reference**.
+
+## Conventions
+
+- **Stack:** React 19, Tailwind 4, `@base-ui/react`, `class-variance-authority`, Lucide icons
+- **Sizing:** Form controls default to `h-11`; compact tier (`sm`) is `h-8` — trigger and dropdown rows stay aligned
+- **Pickers:** `DatePicker` / `TimePicker` / `DateTimePicker` / `RangeDatePicker` — Ant Design–aligned panels; see individual Docs
+- **Tests:** `npm run test` in `packages/ui` (Vitest)

@@ -4,7 +4,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocale } from "@/app/providers";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@minikb/ui/components/ui/select";
 import { api } from "@/lib/api";
+import { LOCALE_ITEMS } from "@/lib/form-options";
 import { kbPath, type KbPage } from "@/lib/paths";
 
 type KbItem = { id: string; name: string };
@@ -123,6 +131,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const kbItems = useMemo(
+    () =>
+      kbs.length === 0 && kbId
+        ? [{ value: kbId, label: kbId }]
+        : kbs.map((kb) => ({ value: kb.id, label: kb.name })),
+    [kbs, kbId],
+  );
+
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <aside
@@ -160,31 +176,23 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 {t("tab.kb")}
               </label>
-              <select
-                id="kb-switcher"
+              <Select
+                size="sm"
+                items={kbItems}
                 value={kbId}
-                onChange={(event) => router.push(kbPath(event.target.value, kbPage ?? "documents"))}
-                style={{
-                  width: "100%",
-                  height: "var(--mini-control-height-compact)",
-                  padding: "0 12px",
-                  borderRadius: "var(--mini-radius-control)",
-                  border: "1px solid var(--mini-color-border-soft)",
-                  background: "var(--mini-color-canvas)",
-                  color: "var(--mini-color-ink)",
-                  fontSize: 14,
-                }}
+                onValueChange={(value) => router.push(kbPath(String(value), kbPage ?? "documents"))}
               >
-                {kbs.length === 0 ? (
-                  <option value={kbId}>{kbId}</option>
-                ) : (
-                  kbs.map((kb) => (
-                    <option key={kb.id} value={kb.id}>
-                      {kb.name}
-                    </option>
-                  ))
-                )}
-              </select>
+                <SelectTrigger id="kb-switcher" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {kbItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {kbLinks.map((link) => (
@@ -233,24 +241,23 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             {t("lang.label")}
           </label>
-          <select
-            id="locale-select"
+          <Select
+            size="sm"
+            items={[...LOCALE_ITEMS]}
             value={locale}
-            onChange={(event) => setLocale(event.target.value as typeof locale)}
-            style={{
-              width: "100%",
-              height: "var(--mini-control-height-compact)",
-              padding: "0 12px",
-              borderRadius: "var(--mini-radius-control)",
-              border: "1px solid var(--mini-color-border-soft)",
-              background: "var(--mini-color-canvas)",
-              color: "var(--mini-color-ink)",
-              fontSize: 14,
-            }}
+            onValueChange={(value) => setLocale(String(value) as typeof locale)}
           >
-            <option value="zh-CN">简体中文</option>
-            <option value="en">English</option>
-          </select>
+            <SelectTrigger id="locale-select" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LOCALE_ITEMS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <a
             href="/api/auth/logout"
             style={{

@@ -11,6 +11,17 @@
   --mini-color-focus: #4f46e5;
   --mini-color-danger: #b42318;
   --mini-color-danger-surface: #fff1f0;
+  --mini-color-success: #027a48;
+  --mini-color-success-surface: #ecfdf3;
+  --mini-color-warning: #b54708;
+  --mini-color-warning-surface: #fffaeb;
+  --mini-color-info: #3538cd;
+  --mini-color-info-surface: #f0f4ff;
+  --mini-color-chart-1: #4f46e5;
+  --mini-color-chart-2: #027a48;
+  --mini-color-chart-3: #b54708;
+  --mini-color-chart-4: #3538cd;
+  --mini-color-chart-5: #666666;
   --mini-font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --mini-radius-control: 10px;

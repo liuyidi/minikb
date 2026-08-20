@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/app/providers";
 import { Button } from "@minikb/ui/components/ui/button";
 import { Modal } from "@minikb/ui/components/ui/modal";
@@ -8,7 +8,15 @@ import { FormGroup, PageHeader, PageShell, statusBadgeVariant } from "@minikb/ui
 import { Badge } from "@minikb/ui/components/ui/badge";
 import { Card } from "@minikb/ui/components/ui/card";
 import { EmptyState } from "@minikb/ui/components/ui/empty";
-import { inputClassName as inputStyle, textareaClassName as textareaStyle } from "@minikb/ui/lib/field-styles";
+import { Input } from "@minikb/ui/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@minikb/ui/components/ui/select";
+import { Textarea } from "@minikb/ui/components/ui/textarea";
 import { api, apiErrorMessage } from "@/lib/api";
 
 type DataSource = {
@@ -41,6 +49,25 @@ export default function SourcesPage({ params }: { params: Promise<{ id: string }
   const [feishuAppId, setFeishuAppId] = useState("");
   const [feishuAppSecret, setFeishuAppSecret] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const sourceKindItems = useMemo(
+    () => [
+      { value: "url", label: "URL" },
+      { value: "git", label: t("src.kind.git") },
+      { value: "sql", label: t("src.kind.sql") },
+      { value: "feishu", label: t("src.kind.feishu") },
+    ],
+    [t],
+  );
+
+  const feishuEntryItems = useMemo(
+    () => [
+      { value: "space", label: t("feishu.space") },
+      { value: "wiki", label: t("feishu.wiki") },
+      { value: "docx", label: t("feishu.docx") },
+    ],
+    [t],
+  );
 
   const loadDataSources = useCallback(async () => {
     const resp = await api(`/v1/kb/${kbId}/data-sources`);
@@ -207,58 +234,83 @@ export default function SourcesPage({ params }: { params: Promise<{ id: string }
         }
       >
         <FormGroup label={t("field.name")}>
-          <input className={inputStyle} value={name} onChange={(e) => setName(e.target.value)} />
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
         </FormGroup>
         <FormGroup label={t("field.sourceType")}>
-          <select className={inputStyle} value={kind} onChange={(e) => setKind(e.target.value)}>
-            <option value="url">URL</option>
-            <option value="git">{t("src.kind.git")}</option>
-            <option value="sql">{t("src.kind.sql")}</option>
-            <option value="feishu">{t("src.kind.feishu")}</option>
-          </select>
+          <Select
+            items={sourceKindItems}
+            value={kind}
+            onValueChange={(value) => setKind(String(value))}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sourceKindItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FormGroup>
         {kind === "url" ? (
           <FormGroup label={t("field.urls")}>
-            <textarea className={textareaStyle} rows={4} value={urls} onChange={(e) => setUrls(e.target.value)} />
+            <Textarea rows={4} value={urls} onChange={(e) => setUrls(e.target.value)} />
           </FormGroup>
         ) : null}
         {kind === "git" ? (
           <>
             <FormGroup label={t("field.repo")}>
-              <input className={inputStyle} value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
+              <Input value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
             </FormGroup>
             <FormGroup label={t("field.branch")}>
-              <input className={inputStyle} value={branch} onChange={(e) => setBranch(e.target.value)} />
+              <Input value={branch} onChange={(e) => setBranch(e.target.value)} />
             </FormGroup>
           </>
         ) : null}
         {kind === "sql" ? (
           <>
             <FormGroup label={t("field.conn")}>
-              <input className={inputStyle} value={connString} onChange={(e) => setConnString(e.target.value)} />
+              <Input value={connString} onChange={(e) => setConnString(e.target.value)} />
             </FormGroup>
             <FormGroup label={t("field.sql")}>
-              <textarea className={textareaStyle} rows={3} value={sqlQuery} onChange={(e) => setSqlQuery(e.target.value)} />
+              <Textarea rows={3} value={sqlQuery} onChange={(e) => setSqlQuery(e.target.value)} />
             </FormGroup>
           </>
         ) : null}
         {kind === "feishu" ? (
           <>
             <FormGroup label={t("field.entryType")}>
-              <select className={inputStyle} value={feishuEntryType} onChange={(e) => setFeishuEntryType(e.target.value)}>
-                <option value="space">{t("feishu.space")}</option>
-                <option value="wiki">{t("feishu.wiki")}</option>
-                <option value="docx">{t("feishu.docx")}</option>
-              </select>
+              <Select
+                items={feishuEntryItems}
+                value={feishuEntryType}
+                onValueChange={(value) => setFeishuEntryType(String(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {feishuEntryItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FormGroup>
             <FormGroup label={t("field.feishuToken")}>
-              <input className={inputStyle} value={feishuToken} onChange={(e) => setFeishuToken(e.target.value)} />
+              <Input value={feishuToken} onChange={(e) => setFeishuToken(e.target.value)} />
             </FormGroup>
             <FormGroup label="App ID">
-              <input className={inputStyle} value={feishuAppId} onChange={(e) => setFeishuAppId(e.target.value)} />
+              <Input value={feishuAppId} onChange={(e) => setFeishuAppId(e.target.value)} />
             </FormGroup>
             <FormGroup label="App Secret">
-              <input className={inputStyle} type="password" value={feishuAppSecret} onChange={(e) => setFeishuAppSecret(e.target.value)} />
+              <Input
+                type="password"
+                value={feishuAppSecret}
+                onChange={(e) => setFeishuAppSecret(e.target.value)}
+              />
             </FormGroup>
           </>
         ) : null}

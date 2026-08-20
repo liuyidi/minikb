@@ -6,8 +6,16 @@ import { Button } from "@minikb/ui/components/ui/button";
 import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
 import { Badge } from "@minikb/ui/components/ui/badge";
 import { Card } from "@minikb/ui/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@minikb/ui/components/ui/select";
 import { inputClassName as inputStyle } from "@minikb/ui/lib/field-styles";
 import { api, apiErrorMessage } from "@/lib/api";
+import { RETRIEVAL_MODE_ITEMS } from "@/lib/form-options";
 
 type Citation = {
   index: number;
@@ -77,12 +85,23 @@ export default function QaPage({ params }: { params: Promise<{ id: string }> }) 
       <PageHeader title={t("qa.title")} />
 
       <Card>
-        <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-          <select className={inputStyle} style={{ width: "auto" }} value={mode} onChange={(e) => setMode(e.target.value)}>
-            <option value="vector">vector</option>
-            <option value="keyword">keyword</option>
-            <option value="hybrid">hybrid</option>
-          </select>
+        <div className="mb-4 flex flex-wrap gap-3">
+          <Select
+            items={[...RETRIEVAL_MODE_ITEMS]}
+            value={mode}
+            onValueChange={(value) => setMode(String(value))}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RETRIEVAL_MODE_ITEMS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
             Top-K
             <input

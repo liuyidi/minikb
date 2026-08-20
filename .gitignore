@@ -39,5 +39,6 @@ coverage.xml
 
 web/node_modules/
 packages/ui/node_modules/
+packages/ui/storybook-static/
 web/.next/
 web/out/

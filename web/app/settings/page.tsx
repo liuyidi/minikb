@@ -7,9 +7,18 @@ import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
 import { Badge } from "@minikb/ui/components/ui/badge";
 import { Card } from "@minikb/ui/components/ui/card";
 import { EmptyState } from "@minikb/ui/components/ui/empty";
-import { inputClassName as inputStyle } from "@minikb/ui/lib/field-styles";
+import { Input } from "@minikb/ui/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@minikb/ui/components/ui/select";
+import { Field, FieldLabel } from "@minikb/ui/components/ui/field";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/locale";
+import { LOCALE_ITEMS } from "@/lib/form-options";
 
 type ApiKeyItem = {
   id: string;
@@ -67,30 +76,35 @@ export default function SystemSettingsPage() {
     <PageShell>
       <PageHeader title={t("sys.title")} />
 
-      <Card>
-        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>{t("sys.account")}</h2>
-        <label htmlFor="sys-locale" style={{ display: "block", fontSize: 13, marginBottom: 6 }}>
-          {t("lang.label")}
-        </label>
-        <select
-          id="sys-locale"
-          className={inputStyle}
-          style={{ width: 220 }}
-          value={locale}
-          onChange={(e) => setLocale(e.target.value as Locale)}
-        >
-          <option value="zh-CN">简体中文</option>
-          <option value="en">English</option>
-        </select>
+      <Card className="mb-4 p-6">
+        <h2 className="mb-4 text-base font-semibold">{t("sys.account")}</h2>
+        <Field className="max-w-xs">
+          <FieldLabel htmlFor="sys-locale">{t("lang.label")}</FieldLabel>
+          <Select
+            items={[...LOCALE_ITEMS]}
+            value={locale}
+            onValueChange={(value) => setLocale(String(value) as Locale)}
+          >
+            <SelectTrigger id="sys-locale">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LOCALE_ITEMS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
       </Card>
 
-      <Card>
-        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 8px" }}>{t("sys.apiKeys")}</h2>
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--mini-color-muted)" }}>{t("sys.apiKeyHint")}</p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <input
-            className={inputStyle}
-            style={{ flex: 1 }}
+      <Card className="mb-4 p-6">
+        <h2 className="mb-2 text-base font-semibold">{t("sys.apiKeys")}</h2>
+        <p className="mb-4 text-sm text-muted-foreground">{t("sys.apiKeyHint")}</p>
+        <div className="mb-4 flex gap-2">
+          <Input
+            className="flex-1"
             placeholder={t("sys.keyName")}
             value={keyName}
             onChange={(e) => setKeyName(e.target.value)}

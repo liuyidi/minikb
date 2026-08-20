@@ -27,17 +27,17 @@
   --ring: var(--mini-color-focus);
   --radius: var(--mini-radius-control);
   --radius-lg: var(--mini-radius-surface);
-  --success: #027a48;
-  --success-foreground: #ecfdf3;
-  --warning: #b54708;
-  --warning-foreground: #fffaeb;
-  --info: #3538cd;
-  --info-foreground: #f0f4ff;
-  --chart-1: var(--mini-color-focus);
-  --chart-2: #027a48;
-  --chart-3: #b54708;
-  --chart-4: #3538cd;
-  --chart-5: #666666;
+  --success: var(--mini-color-success);
+  --success-foreground: var(--mini-color-success-surface);
+  --warning: var(--mini-color-warning);
+  --warning-foreground: var(--mini-color-warning-surface);
+  --info: var(--mini-color-info);
+  --info-foreground: var(--mini-color-info-surface);
+  --chart-1: var(--mini-color-chart-1);
+  --chart-2: var(--mini-color-chart-2);
+  --chart-3: var(--mini-color-chart-3);
+  --chart-4: var(--mini-color-chart-4);
+  --chart-5: var(--mini-color-chart-5);
 }
 
 @theme inline {

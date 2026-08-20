@@ -7,7 +7,14 @@ import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
 import { Badge } from "@minikb/ui/components/ui/badge";
 import { Card } from "@minikb/ui/components/ui/card";
 import { EmptyState } from "@minikb/ui/components/ui/empty";
-import { inputClassName as inputStyle } from "@minikb/ui/lib/field-styles";
+import { Input } from "@minikb/ui/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@minikb/ui/components/ui/select";
 import { api } from "@/lib/api";
 
 type ChunkItem = {
@@ -92,6 +99,14 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
     void loadChunks();
   }, [loadChunks]);
 
+  const docItems = useMemo(
+    () => [
+      { value: "", label: t("chunk.allDocs") },
+      ...docs.map((doc) => ({ value: doc.id, label: doc.title })),
+    ],
+    [docs, t],
+  );
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const highlight = useMemo(() => {
@@ -145,23 +160,28 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
         </div>
       ) : null}
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-        <select
-          className={inputStyle}
-          style={{ width: "auto", minWidth: 180 }}
+      <div className="mb-5 flex flex-wrap gap-3">
+        <Select
+          items={docItems}
           value={docId}
-          onChange={(e) => { setDocId(e.target.value); setPage(0); }}
+          onValueChange={(value) => {
+            setDocId(String(value));
+            setPage(0);
+          }}
         >
-          <option value="">{t("chunk.allDocs")}</option>
-          {docs.map((doc) => (
-            <option key={doc.id} value={doc.id}>
-              {doc.title}
-            </option>
-          ))}
-        </select>
-        <input
-          className={inputStyle}
-          style={{ flex: 1, minWidth: 200 }}
+          <SelectTrigger className="min-w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {docItems.map((item) => (
+              <SelectItem key={item.value || "__all__"} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          className="min-w-[200px] flex-1"
           placeholder={t("chunk.search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
