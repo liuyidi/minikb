@@ -3,7 +3,7 @@ name: Publish Volcengine Minikb
 # Rsync this commit to Volcengine (/opt/minikb) and docker compose build on the host.
 # Do not push/pull GHCR app images — GHCR from this region is too slow.
 #
-# Required secrets: ECS_SSH_KEY
+# Required secrets: ECS_SSH_KEY, SERVERLESSSHIP_TOKEN_MINIKB (or SERVERLESSSHIP_TOKEN)
 # Optional vars: ECS_HOST / ECS_USER / ECS_SSH_PORT / SERVERLESSSHIP_RELEASE_URL
 #
 # Trigger: push to main (app/Docker paths) or Actions → Run workflow.
@@ -111,11 +111,17 @@ jobs:
       contents: read
     env:
       SERVERLESSSHIP_RELEASE_URL: ${{ vars.SERVERLESSSHIP_RELEASE_URL }}
+      SERVERLESSSHIP_TOKEN: ${{ secrets.SERVERLESSSHIP_TOKEN_MINIKB || secrets.SERVERLESSSHIP_TOKEN }}
 
     steps:
       - name: Send deploy notification to ServerlessShip
         run: |
           set -euo pipefail
+
+          if [[ -z "${SERVERLESSSHIP_TOKEN:-}" ]]; then
+            echo "Missing SERVERLESSSHIP_TOKEN_MINIKB (or SERVERLESSSHIP_TOKEN) secret." >&2
+            exit 1
+          fi
 
           serverlessship_release_url="${SERVERLESSSHIP_RELEASE_URL:-https://serverless-ship.liuyidi.me/api/releases}"
 
@@ -132,6 +138,7 @@ jobs:
           response="$(
             curl -fsS \
               -X POST \
+              -H "Authorization: Bearer ${SERVERLESSSHIP_TOKEN}" \
               -H "Content-Type: application/json" \
               -d "$payload" \
               "$serverlessship_release_url"
