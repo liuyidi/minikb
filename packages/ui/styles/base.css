@@ -17,17 +17,3 @@
   white-space: nowrap;
   border-width: 0;
 }
-
-/* Interactive affordance for links, buttons, and other click targets */
-a[href]:not([aria-disabled="true"]),
-button:not(:disabled),
-[role="button"]:not([aria-disabled="true"]),
-label[for],
-summary {
-  cursor: pointer;
-}
-
-button:disabled,
-[aria-disabled="true"] {
-  cursor: not-allowed;
-}

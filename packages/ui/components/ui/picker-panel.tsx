@@ -66,6 +66,6 @@ export function PickerPanelHeader({
 }
 
 export const pickerCellClassName =
-  "inline-flex h-8 w-[calc(33.333%-0.5rem)] items-center justify-center rounded-[var(--radius)] text-sm transition-colors hover:bg-muted";
+  "inline-flex h-8 w-[calc(33.333%-0.5rem)] cursor-pointer items-center justify-center rounded-[var(--radius)] text-sm transition-colors hover:bg-muted";
 
 export const pickerCellSelectedClassName = "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground";

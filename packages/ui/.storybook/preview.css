@@ -1,6 +1,7 @@
 @import "../styles/bridge.css";
 @import "../styles/base.css";
 @import "tailwindcss";
+@import "../styles/interactive.css";
 
 @source "../components/**/*.{ts,tsx}";
 @source "../stories/**/*.{ts,tsx}";

@@ -2,6 +2,7 @@
 @import "@minikb/ui/styles/base.css";
 @import "@minikb/chat/styles/chat.css";
 @import "tailwindcss";
+@import "@minikb/ui/styles/interactive.css";
 
 @source "../../packages/ui/**/*.{ts,tsx}";
 @source "../../packages/chat/**/*.{ts,tsx}";
