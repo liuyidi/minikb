@@ -21,6 +21,7 @@ on:
       - "docker/**"
       - "web/**"
       - "packages/ui/**"
+      - "packages/chat/**"
       - "deploy/remote-build.sh"
       - ".github/workflows/publish-volcengine-minikb.yml"
 
