@@ -11,6 +11,7 @@ import {
   sealSession,
   sessionCookieOptions,
 } from "@/lib/session";
+import { fetchOidcUserProfile } from "@/lib/userinfo";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -63,27 +64,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(publicUrl(request, "/?error=token"));
   }
 
-  const userinfoResp = await fetch(`${issuerBase(issuer)}/oauth/userinfo`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  if (!userinfoResp.ok) {
+  const profile = await fetchOidcUserProfile(issuer, accessToken);
+  if (!profile) {
     return NextResponse.redirect(publicUrl(request, "/?error=userinfo"));
   }
-
-  const userinfo = (await userinfoResp.json()) as {
-    sub?: string;
-    id?: string;
-    name?: string;
-    email?: string;
-    nickname?: string;
-    preferred_username?: string;
-  };
-  const sub = String(userinfo.sub ?? userinfo.id ?? "");
-  const name = userinfo.name?.trim() || undefined;
-  const email = userinfo.email?.trim() || undefined;
-  const nickname =
-    userinfo.nickname?.trim() || userinfo.preferred_username?.trim() || undefined;
 
   const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
   const sessionToken = await sealSession(
@@ -91,10 +75,10 @@ export async function GET(request: NextRequest) {
       access_token: accessToken,
       refresh_token: refreshToken,
       expires_at: expiresAt,
-      sub,
-      name,
-      email,
-      nickname,
+      sub: profile.sub,
+      name: profile.name,
+      email: profile.email,
+      nickname: profile.nickname,
     },
     sessionSecret,
   );
