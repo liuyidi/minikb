@@ -1,13 +1,19 @@
 "use client";
 
 import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Copy, FileText } from "lucide-react";
 import { useLocale } from "@/app/providers";
+import { ChunkActionButtons } from "@/components/chunks/ChunkActionButtons";
+import { ChunkFormModal, type ChunkFormValues } from "@/components/chunks/ChunkFormModal";
+import { ChunkViewModal } from "@/components/chunks/ChunkViewModal";
+import { SearchToolbar, type SearchField } from "@/components/content/SearchToolbar";
+import { ViewModeToggle, type ViewMode } from "@/components/content/ViewModeToggle";
 import { Button } from "@minikb/ui/components/ui/button";
 import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
 import { Badge } from "@minikb/ui/components/ui/badge";
 import { Card } from "@minikb/ui/components/ui/card";
 import { EmptyState } from "@minikb/ui/components/ui/empty";
-import { Input } from "@minikb/ui/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -15,7 +21,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@minikb/ui/components/ui/select";
-import { api } from "@/lib/api";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@minikb/ui/components/ui/table";
+import { api, apiErrorFromResponse } from "@/lib/api";
+import { fetchAllDocuments } from "@/lib/documents";
+import { getDocumentPath, getFileName } from "@/lib/document-tree";
 
 type ChunkItem = {
   id: string;
@@ -23,10 +39,16 @@ type ChunkItem = {
   text: string;
   tokens?: number;
   document_id: string;
-  meta?: { heading_path?: string | string[]; enriched_heading_path?: string | string[]; language?: string };
+  created_at?: string;
+  meta?: {
+    title?: string;
+    heading_path?: string | string[];
+    enriched_heading_path?: string | string[];
+    language?: string;
+  };
 };
 
-type DocOption = { id: string; title: string };
+type DocOption = { id: string; title: string; meta?: Record<string, unknown> };
 
 type ChunkStats = {
   total_chunks: number;
@@ -35,6 +57,7 @@ type ChunkStats = {
 };
 
 const PAGE_SIZE = 20;
+const ALL_DOCS_VALUE = "__all__";
 
 function headingPath(meta?: ChunkItem["meta"]): string | null {
   const path = meta?.heading_path ?? meta?.enriched_heading_path;
@@ -42,19 +65,53 @@ function headingPath(meta?: ChunkItem["meta"]): string | null {
   return Array.isArray(path) ? path.join(" > ") : path;
 }
 
+function CopyIdButton({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <button
+      type="button"
+      aria-label="Copy ID"
+      className="inline-flex items-center text-muted-foreground hover:text-foreground"
+      onClick={(event) => {
+        event.stopPropagation();
+        void navigator.clipboard.writeText(id).then(() => {
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1200);
+        });
+      }}
+    >
+      <Copy className="size-3" />
+      {copied ? <span className="ml-1 text-[10px]">OK</span> : null}
+    </button>
+  );
+}
+
 export default function ChunksPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: kbId } = use(params);
-  const { t } = useLocale();
+  const searchParams = useSearchParams();
+  const { t, locale } = useLocale();
   const [chunks, setChunks] = useState<ChunkItem[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<ChunkStats | null>(null);
   const [docs, setDocs] = useState<DocOption[]>([]);
-  const [docId, setDocId] = useState("");
+  const [docId, setDocId] = useState(ALL_DOCS_VALUE);
+  const [searchField, setSearchField] = useState<SearchField>("name");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [activeChunk, setActiveChunk] = useState<ChunkItem | null>(null);
+  const [viewChunk, setViewChunk] = useState<ChunkItem | null>(null);
+
+  useEffect(() => {
+    const documentId = searchParams.get("document_id");
+    if (documentId) setDocId(documentId);
+  }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -64,19 +121,18 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
-    void (async () => {
-      const resp = await api(`/v1/kb/${kbId}/documents`);
-      if (resp.ok) {
-        const data = (await resp.json()) as { items: DocOption[] };
-        setDocs(data.items ?? []);
-      }
-    })();
+  const loadDocs = useCallback(async () => {
+    const items = await fetchAllDocuments(kbId);
+    setDocs(items);
   }, [kbId]);
+
+  useEffect(() => {
+    void loadDocs();
+  }, [loadDocs]);
 
   const loadChunks = useCallback(async () => {
     const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(page * PAGE_SIZE) });
-    if (docId) params.set("document_id", docId);
+    if (docId && docId !== ALL_DOCS_VALUE) params.set("document_id", docId);
     if (debouncedSearch) params.set("search", debouncedSearch);
 
     const [chunkResp, statsResp] = await Promise.all([
@@ -99,24 +155,65 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
     void loadChunks();
   }, [loadChunks]);
 
+  useEffect(() => {
+    const chunkId = searchParams.get("chunk");
+    if (!chunkId) return;
+    void (async () => {
+      const resp = await api(`/v1/kb/${kbId}/chunks/${chunkId}`);
+      if (!resp.ok) return;
+      const chunk = (await resp.json()) as ChunkItem;
+      setChunks((prev) => {
+        if (prev.some((item) => item.id === chunk.id)) return prev;
+        return [chunk, ...prev];
+      });
+      setViewChunk(chunk);
+    })();
+  }, [kbId, searchParams]);
+
+  const docMap = useMemo(() => new Map(docs.map((doc) => [doc.id, doc])), [docs]);
+
   const docItems = useMemo(
     () => [
-      { value: "", label: t("chunk.allDocs") },
-      ...docs.map((doc) => ({ value: doc.id, label: doc.title })),
+      { value: ALL_DOCS_VALUE, label: t("chunk.allDocs") },
+      ...docs.map((doc) => ({ value: doc.id, label: getFileName(getDocumentPath(doc)) })),
     ],
     [docs, t],
   );
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const displayTotal = total;
+  const totalPages = Math.max(1, Math.ceil(displayTotal / PAGE_SIZE));
 
   const highlight = useMemo(() => {
-    if (!debouncedSearch) return null;
+    if (!debouncedSearch || searchField === "id") return null;
     try {
       return new RegExp(`(${debouncedSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
     } catch {
       return null;
     }
-  }, [debouncedSearch]);
+  }, [debouncedSearch, searchField]);
+
+  const formLabels = useMemo(
+    () => ({
+      createTitle: t("chunk.createTitle"),
+      editTitle: t("chunk.editTitle"),
+      doc: t("chunk.doc"),
+      docPlaceholder: t("chunk.docPlaceholder"),
+      title: t("chunk.chunkTitle"),
+      titlePlaceholder: t("chunk.titlePlaceholder"),
+      content: t("chunk.content"),
+      contentPlaceholder: t("chunk.contentPlaceholder"),
+      cancel: t("btn.cancel"),
+      create: t("chunk.create"),
+      save: t("chunk.save"),
+      reembedHint: t("chunk.reembedHint"),
+      seq: t("chunk.colSeq"),
+      chars: t("chunk.chars"),
+      requiredDoc: t("chunk.requiredDoc"),
+      requiredContent: t("chunk.requiredContent"),
+      tooLong: t("chunk.tooLong"),
+    }),
+    [t],
+  );
 
   function renderText(text: string) {
     if (!highlight) return text;
@@ -129,6 +226,127 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
       ) : (
         part
       ),
+    );
+  }
+
+  function docLabel(documentId: string) {
+    const doc = docMap.get(documentId);
+    if (!doc) return documentId;
+    return getFileName(getDocumentPath(doc));
+  }
+
+  function openCreate() {
+    setFormMode("create");
+    setActiveChunk(null);
+    setFormOpen(true);
+  }
+
+  function openEdit(chunk: ChunkItem) {
+    setFormMode("edit");
+    setActiveChunk(chunk);
+    setFormOpen(true);
+  }
+
+  async function handleDelete(chunk: ChunkItem) {
+    if (!confirm(t("chunk.deleteConfirm"))) return;
+    const resp = await api(`/v1/kb/${kbId}/chunks/${chunk.id}`, { method: "DELETE" });
+    if (!resp.ok) {
+      alert(await apiErrorFromResponse(resp));
+      return;
+    }
+    void loadChunks();
+  }
+
+  async function handleSubmit(values: ChunkFormValues) {
+    setSaving(true);
+    try {
+      const payload = {
+        document_id: values.documentId,
+        text: values.text,
+        title: values.title.trim() || null,
+      };
+
+      const resp =
+        formMode === "create"
+          ? await api(`/v1/kb/${kbId}/chunks`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            })
+          : await api(`/v1/kb/${kbId}/chunks/${activeChunk?.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+      if (!resp.ok) {
+        alert(await apiErrorFromResponse(resp));
+        return;
+      }
+
+      setFormOpen(false);
+      setActiveChunk(null);
+      void loadChunks();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function renderChunkCard(chunk: ChunkItem) {
+    const path = headingPath(chunk.meta);
+    const doc = docMap.get(chunk.document_id);
+
+    return (
+      <Card key={chunk.id} className="group relative flex h-full flex-col border border-border bg-card shadow-none">
+        <div className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-hover:opacity-100">
+          <ChunkActionButtons
+            variant="hover"
+            viewLabel={t("chunk.view")}
+            editLabel={t("chunk.edit")}
+            deleteLabel={t("chunk.delete")}
+            onView={() => setViewChunk(chunk)}
+            onEdit={() => openEdit(chunk)}
+            onDelete={() => void handleDelete(chunk)}
+          />
+        </div>
+
+        <div className="flex flex-1 cursor-pointer flex-col pr-16" onClick={() => setViewChunk(chunk)}>
+          <div className="mb-2 flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground">#{chunk.seq + 1}</div>
+              {chunk.meta?.title ? (
+                <div className="mt-1 truncate text-sm font-medium">{chunk.meta.title}</div>
+              ) : null}
+              <div className="mt-1 flex items-center gap-1 truncate font-mono text-[11px] text-muted-foreground">
+                <span className="truncate">ID {chunk.id}</span>
+                <CopyIdButton id={chunk.id} />
+              </div>
+            </div>
+            <Badge>{chunk.tokens ?? "?"} tok</Badge>
+          </div>
+          {path ? <div className="mb-2 text-xs text-[#3538cd]">{path}</div> : null}
+          <div
+            className="flex-1 text-[13px] text-[var(--mini-color-ink-soft)]"
+            style={{ maxHeight: 120, overflow: "hidden", whiteSpace: "pre-wrap" }}
+          >
+            {renderText(chunk.text)}
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <FileText className="size-3.5" />
+            {doc ? docLabel(chunk.document_id) : chunk.document_id}
+          </span>
+          <span>
+            {t("chunk.chars")} {chunk.text.length}
+          </span>
+          {chunk.created_at ? (
+            <span>
+              {t("chunk.updatedAt")} {new Date(chunk.created_at).toLocaleString(locale)}
+            </span>
+          ) : null}
+        </div>
+      </Card>
     );
   }
 
@@ -160,86 +378,131 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
         </div>
       ) : null}
 
-      <div className="mb-5 flex flex-wrap gap-3">
-        <Select
-          items={docItems}
-          value={docId}
-          onValueChange={(value) => {
-            setDocId(String(value));
-            setPage(0);
-          }}
-        >
-          <SelectTrigger className="min-w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {docItems.map((item) => (
-              <SelectItem key={item.value || "__all__"} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          className="min-w-[200px] flex-1"
-          placeholder={t("chunk.search")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="secondary" onClick={openCreate}>
+            {t("chunk.add")}
+          </Button>
+          <span className="text-sm text-muted-foreground">{t("chunk.total", { n: displayTotal })}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            items={docItems}
+            value={docId || ALL_DOCS_VALUE}
+            onValueChange={(value) => {
+              setDocId(String(value));
+              setPage(0);
+            }}
+          >
+            <SelectTrigger className="h-9 w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-64 min-w-[220px]">
+              {docItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  <span className="truncate">{item.label}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <SearchToolbar
+            field={searchField}
+            onFieldChange={setSearchField}
+            value={search}
+            onValueChange={setSearch}
+            nameLabel={t("view.name")}
+            idLabel={t("view.id")}
+            placeholder={searchField === "id" ? t("chunk.searchId") : t("chunk.searchContent")}
+          />
+          <ViewModeToggle
+            value={viewMode}
+            onChange={setViewMode}
+            listLabel={t("view.list")}
+            directoryLabel={t("view.directory")}
+            directoryIcon="grid"
+          />
+        </div>
       </div>
 
       {loading ? (
         <p style={{ color: "var(--mini-color-muted)", fontSize: 14 }}>...</p>
       ) : chunks.length === 0 ? (
-        <EmptyState message={t("chunk.empty")} />
+        <EmptyState className="border border-border bg-card" message={t("chunk.empty")} />
+      ) : viewMode === "list" ? (
+        <div className="overflow-hidden rounded-[var(--mini-radius-control)] border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("chunk.colSeq")}</TableHead>
+                <TableHead>{t("chunk.colId")}</TableHead>
+                <TableHead>{t("chunk.colDoc")}</TableHead>
+                <TableHead className="min-w-[280px]">{t("chunk.colContent")}</TableHead>
+                <TableHead>{t("chunk.colUpdated")}</TableHead>
+                <TableHead className="min-w-[200px] whitespace-nowrap">{t("chunk.colActions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {chunks.map((chunk) => {
+                const path = headingPath(chunk.meta);
+                return (
+                  <TableRow key={chunk.id}>
+                    <TableCell className="font-medium">#{chunk.seq + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex max-w-[200px] items-center gap-1 font-mono text-xs">
+                        <span className="truncate">{chunk.id}</span>
+                        <CopyIdButton id={chunk.id} />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="min-w-[140px]">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <FileText className="size-3.5 text-muted-foreground" />
+                          {docLabel(chunk.document_id)}
+                        </div>
+                        <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
+                          {chunk.document_id}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {chunk.meta?.title ? (
+                        <div className="mb-1 text-sm font-medium">{chunk.meta.title}</div>
+                      ) : null}
+                      {path ? <div className="mb-1 text-xs text-[#3538cd]">{path}</div> : null}
+                      <div
+                        className="text-[13px] text-[var(--mini-color-ink-soft)]"
+                        style={{ maxHeight: 72, overflow: "hidden", whiteSpace: "pre-wrap" }}
+                      >
+                        {renderText(chunk.text)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {chunk.created_at ? new Date(chunk.created_at).toLocaleString(locale) : "—"}
+                    </TableCell>
+                    <TableCell className="min-w-[200px] align-middle whitespace-nowrap">
+                      <ChunkActionButtons
+                        variant="inline"
+                        viewLabel={t("chunk.view")}
+                        editLabel={t("chunk.edit")}
+                        deleteLabel={t("chunk.delete")}
+                        onView={() => setViewChunk(chunk)}
+                        onEdit={() => openEdit(chunk)}
+                        onDelete={() => void handleDelete(chunk)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
-        chunks.map((chunk) => {
-          const path = headingPath(chunk.meta);
-          const isExpanded = expanded === chunk.id;
-          return (
-            <Card key={chunk.id}>
-              <div
-                style={{ cursor: "pointer" }}
-                onClick={() => setExpanded(isExpanded ? null : chunk.id)}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontWeight: 600, fontSize: 15 }}>Chunk #{chunk.seq + 1}</span>
-                  <Badge>{chunk.tokens ?? "?"} tok</Badge>
-                </div>
-                {path ? (
-                  <div style={{ fontSize: 12, color: "#3538cd", marginBottom: 8 }}>{path}</div>
-                ) : null}
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "var(--mini-color-ink-soft)",
-                    maxHeight: isExpanded ? "none" : 100,
-                    overflow: "hidden",
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {renderText(chunk.text)}
-                </div>
-              </div>
-              {isExpanded ? (
-                <div style={{ marginTop: 12, fontSize: 12, color: "var(--mini-color-muted)" }}>
-                  <strong>ID:</strong> {chunk.id}
-                  <br />
-                  <strong>Doc:</strong> {chunk.document_id}
-                  {chunk.meta?.language ? (
-                    <>
-                      <br />
-                      <strong>Lang:</strong> {chunk.meta.language}
-                    </>
-                  ) : null}
-                </div>
-              ) : null}
-            </Card>
-          );
-        })
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {chunks.map((chunk) => renderChunkCard(chunk))}
+        </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16 }}>
         {totalPages > 1 ? (
           <>
             <Button
@@ -252,7 +515,7 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
               {t("chunk.prev")}
             </Button>
             <span style={{ fontSize: 13, color: "var(--mini-color-muted)" }}>
-              {t("chunk.page", { page: page + 1, total: totalPages, n: total })}
+              {t("chunk.page", { page: page + 1, total: totalPages, n: displayTotal })}
             </span>
             <Button
               variant="secondary"
@@ -266,10 +529,43 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
           </>
         ) : (
           <span style={{ fontSize: 13, color: "var(--mini-color-muted)" }}>
-            {t("chunk.count", { n: total })}
+            {t("chunk.count", { n: displayTotal })}
           </span>
         )}
       </div>
+
+      <ChunkFormModal
+        open={formOpen}
+        mode={formMode}
+        chunk={activeChunk}
+        docs={docs}
+        defaultDocumentId={docId === ALL_DOCS_VALUE ? "" : docId}
+        saving={saving}
+        labels={formLabels}
+        onClose={() => {
+          setFormOpen(false);
+          setActiveChunk(null);
+        }}
+        onSubmit={handleSubmit}
+      />
+
+      <ChunkViewModal
+        open={viewChunk !== null}
+        chunk={viewChunk}
+        docs={docs}
+        locale={locale}
+        labels={{
+          title: t("chunk.viewTitle"),
+          doc: t("chunk.doc"),
+          chunkTitle: t("chunk.chunkTitle"),
+          content: t("chunk.content"),
+          close: t("btn.close"),
+          seq: t("chunk.colSeq"),
+          chars: t("chunk.chars"),
+          updatedAt: t("chunk.updatedAt"),
+        }}
+        onClose={() => setViewChunk(null)}
+      />
     </PageShell>
   );
 }

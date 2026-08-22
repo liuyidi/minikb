@@ -4,6 +4,10 @@
 
 @source "../components/**/*.{ts,tsx}";
 @source "../stories/**/*.{ts,tsx}";
+@source "../../chat/components/**/*.{ts,tsx}";
+@source "../../chat/stories/**/*.{ts,tsx}";
+
+@import "../../chat/styles/chat.css";
 
 html,
 body,

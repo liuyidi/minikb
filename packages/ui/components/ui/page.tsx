@@ -9,7 +9,7 @@ function PageShell({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={cn("max-w-[960px] px-10 py-8", className)}>{children}</div>;
+  return <div className={cn("w-full px-10 py-8", className)}>{children}</div>;
 }
 
 function PageHeader({

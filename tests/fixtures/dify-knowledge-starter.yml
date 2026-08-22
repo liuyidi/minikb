@@ -1,0 +1,500 @@
+app:
+  description: ''
+  icon: 📚
+  icon_background: '#E4FBCC'
+  icon_type: emoji
+  mode: advanced-chat
+  name: 知识库：连接你的知识数据
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai:1.0.3@cc37544750d72ca3782bdaa81ab0e2facbf5bb74105a169a7ff974a27c6a5f29
+    version: null
+kind: app
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      - document
+      allowed_file_upload_methods:
+      - remote_url
+      - local_file
+      enabled: true
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 50
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        knowledge_file_size_limit: 15
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      number_limits: 3
+    opening_statement: 你好！👋 你可以问我任何关于文档的问题，我会根据知识库里的内容回答。
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: llm-answer
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1783587760552-source-1783587775644-target
+      source: '1783587760552'
+      sourceHandle: source
+      target: '1783587775644'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1783587775644-source-llm-target
+      source: '1783587775644'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables: []
+      height: 73
+      id: '1783587760552'
+      position:
+        x: -214.07610373181308
+        y: 293.8098365428229
+      positionAbsolute:
+        x: -214.07610373181308
+        y: 293.8098365428229
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params: {}
+          mode: chat
+          name: gpt-5.4-mini
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: 0bcf5f92-a967-4b73-9e52-2dae7e83ae2a
+          role: system
+          text: '角色
+
+            你是一位乐于助人的助手，负责回答用户关于其自有文档的问题。
+
+
+            任务
+
+            使用 {{#context#}} 部分中的文档摘录回答用户的问题。
+
+
+            指南
+
+            1. 回答必须基于摘录内容。不要编造没有摘录支持的事实。
+
+            2. 如果用户提出宽泛问题（例如“这份文档主要讲什么？”或“总结一下”），请基于已有摘录给出概览，不要拒绝回答。
+
+            3. 不要要求用户粘贴文本或分享链接，因为你已经拥有他们的文档内容。
+
+            4. 如果摘录中没有与具体问题相关的内容，请简要说明你在文档中没有找到，并建议用户换一种问法。
+
+            5. 使用清晰易懂的语言回答，并保持与问题相同的语言。'
+        reasoning_format: separated
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 1000
+        selected: false
+        title: 大语言模型
+        type: llm
+        vision:
+          enabled: false
+      height: 117
+      id: llm
+      position:
+        x: 703.6830609047049
+        y: 261.78471003257386
+      positionAbsolute:
+        x: 703.6830609047049
+        y: 261.78471003257386
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        answer: '{{#llm.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 103
+      id: answer
+      position:
+        x: 1207.084160323284
+        y: 256.79181258504616
+      positionAbsolute:
+        x: 1207.084160323284
+        y: 256.79181258504616
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        dataset_ids:
+        - FkTE0mjklmR/7X41CtKitEh9jp9Xi5h39BSkCqiTyPdvHRix9o8cyorJqyMZ/L76
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0
+            vector_setting:
+              embedding_model_name: text-embedding-3-large
+              embedding_provider_name: langgenius/openai/openai
+              vector_weight: 1
+            weight_type: customized
+        query_attachment_selector: []
+        query_variable_selector:
+        - '1783587760552'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        title: 知识检索
+        type: knowledge-retrieval
+      height: 52
+      id: '1783587775644'
+      position:
+        x: 271.14098074306276
+        y: 279.7131250944957
+      positionAbsolute:
+        x: 271.14098074306276
+        y: 279.7131250944957
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        author: Anne
+        desc: ''
+        height: 358
+        selected: false
+        showAuthor: false
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          16px;","text":"😉 现在，上传你的文档吧。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          16px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textStyle":"font-size:
+          16px;","textFormat":0},{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"它能做什么：","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"这个聊天机器人会基于","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"你的","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"文档（比如手册、政策、产品指南）回答，而不再是靠猜测。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          14px;"},{"children":[],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textStyle":"font-size:
+          14px;","textFormat":0},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"这也被称为 RAG（检索增强生成）。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[{"type":"linebreak","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          16px;","text":"RAG 是怎么工作的？你可以把它想象成一本摊开的书。","type":"text","version":1},{"type":"linebreak","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"通常，AI 会凭“记忆”回答问题，这意味着它有时会猜测或编造。有了 RAG，就相当于把你的专属“内容”（你的文档）交给
+          AI。每当你提问时，它会先翻阅你的文件，找到准确事实，然后再根据找到的内容写出合适的回答！","type":"text","version":1},{"type":"linebreak","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"我们会在上一个聊天机器人模板的基础上继续搭建，并在中间添加一个新步骤：知识检索节点。它会在 AI 回答前先到你的文件里查找内容。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          16px;"},{"children":[{"type":"linebreak","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"注意！","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":" ","type":"text","version":1},{"type":"linebreak","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"这个模板需要创建一个新的nearing：用于存放上传文档的知识库。运行前请先阅读下面的说明。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          14px;"}],"direction":null,"format":"","indent":0,"type":"root","version":1}}'
+        theme: blue
+        title: ''
+        type: ''
+        width: 772
+      height: 358
+      id: '1783587830333'
+      position:
+        x: 407
+        y: -358.74382750014007
+      positionAbsolute:
+        x: 407
+        y: -358.74382750014007
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 772
+      zIndex: 0
+    - data:
+        author: Anne
+        desc: ''
+        height: 183
+        selected: false
+        showAuthor: false
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          16px;","text":"创建并连接知识库","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          16px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textStyle":"font-size:
+          14px;","textFormat":0},{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"1. 创建知识库","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"（上传你的文档）：可以打开这份","type":"text","version":1},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"操作指南","type":"text","version":1}],"direction":null,"format":"","indent":0,"type":"link","version":1,"rel":"noreferrer","target":null,"title":null,"url":"https://dify.ai/blog/create-knowledge-in-dify-for-beginners"},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"开始创建。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          14px;"},{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"2. 在知识检索节点中连接知识库：","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"点击下面的","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"知识检索","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"节点，然后在知识库内点击 + 按钮，把刚创建的知识库添加进来。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          14px;"}],"direction":null,"format":"","indent":0,"type":"root","version":1}}'
+        theme: pink
+        title: ''
+        type: ''
+        width: 759
+      height: 183
+      id: '1783587847156'
+      position:
+        x: 407
+        y: 52.95333259969753
+      positionAbsolute:
+        x: 407
+        y: 52.95333259969753
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 759
+      zIndex: 0
+    - data:
+        author: Anne
+        desc: ''
+        height: 194
+        selected: false
+        showAuthor: false
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          16px;","text":"1️⃣  ","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          16px;","text":"找到正确的信息","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          16px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":""},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"这是这个聊天流中的新步骤。它会接收用户的问题，搜索你的文档，并提取出最相关的几个片段。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textStyle":"font-size:
+          14px;","textFormat":0},{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"你必须完成这一步：","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":" ","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"选择你的知识库","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"（前提是你已经创建了知识库。如果还没有，请查看上方红色说明）。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          14px;"}],"direction":null,"format":"","indent":0,"type":"root","version":1}}'
+        theme: yellow
+        title: ''
+        type: ''
+        width: 428
+      height: 194
+      id: '1783587876787'
+      position:
+        x: 173.08108585245242
+        y: 432.82057918333396
+      positionAbsolute:
+        x: 173.08108585245242
+        y: 432.82057918333396
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 428
+      zIndex: 0
+    - data:
+        author: Anne
+        desc: ''
+        height: 236
+        selected: false
+        showAuthor: false
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          16px;","text":"2️⃣  ","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          16px;","text":"根据文档回答","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          16px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":""},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"AI 会阅读上一个节点找到的信息片段，并基于这些内容写出回答。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textStyle":"font-size:
+          14px;","textFormat":0},{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"按你的想法调整：","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"编辑提示词来改变语气或规则。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          14px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textStyle":"font-size:
+          14px;","textFormat":0},{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"有两点要保留：","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"在这里选择一个 AI 模型，并且不要删除提示词里的","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"上下文","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"部分，因为检索到的信息片段会插入到这里。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          14px;"}],"direction":null,"format":"","indent":0,"type":"root","version":1}}'
+        theme: yellow
+        title: ''
+        type: ''
+        width: 458
+      height: 236
+      id: '1783587889142'
+      position:
+        x: 674.3505310585701
+        y: 432.82057918333396
+      positionAbsolute:
+        x: 674.3505310585701
+        y: 432.82057918333396
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 458
+      zIndex: 0
+    - data:
+        author: Anne
+        desc: ''
+        height: 244
+        selected: false
+        showAuthor: false
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          16px;","text":"3️⃣  ","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          16px;","text":"回复","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          16px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":""},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"在聊天中显示回答。","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"引用和归属已开启","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"，因此用户可以看到每条事实来自哪份文档。你可以在右上角的“功能”里把它关闭。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"}],"direction":null,"format":"","indent":0,"type":"root","version":1}}'
+        theme: yellow
+        title: ''
+        type: ''
+        width: 432
+      height: 244
+      id: '1783587924998'
+      position:
+        x: 1276.7406136261527
+        y: 431.3759986495987
+      positionAbsolute:
+        x: 1276.7406136261527
+        y: 431.3759986495987
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 432
+      zIndex: 0
+    - data:
+        author: Anne
+        desc: ''
+        height: 284
+        selected: false
+        showAuthor: false
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          16px;","text":"实用链接","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          16px;"},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"• 点击","type":"text","version":1},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"此处","type":"text","version":1}],"direction":null,"format":"","indent":0,"type":"link","version":1,"rel":"noreferrer","target":null,"title":null,"url":"https://dify.ai/blog/create-knowledge-in-dify-for-beginners"},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"跟随教程搭建知识库。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"• 点击","type":"text","version":1},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"此处","type":"text","version":1}],"direction":null,"format":"","indent":0,"type":"link","version":1,"rel":"noreferrer","target":null,"title":null,"url":"https://dify.ai/blog/prompt-engineering-for-workflow-ready-llm-apps"},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"了解如何写出更好的提示词。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textStyle":"font-size:
+          14px;","textFormat":0},{"children":[{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"接下来你可以做什么","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":1,"textStyle":"font-size:
+          14px;"},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"• ","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"添加更多文档","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"到你的知识库中。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"• ","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"调整检索：","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"如果回答遗漏细节或显得杂乱，可以在步骤 1 中调高或调低“Top K”。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"• ","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"编辑回答风格","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"，在大语言模型节点中进行调整（例如“始终用项目符号回答”）。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"• ","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"发布为网页应用","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"，这样你的团队就可以针对文档提问。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"• ","type":"text","version":1},{"detail":0,"format":1,"mode":"normal","style":"font-size:
+          14px;","text":"准备继续了吗？","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"font-size:
+          14px;","text":"在模版内的新手入门类别里，你可以学习更多节点和如何使用工具。","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":"font-size:
+          14px;"},{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1,"textStyle":"font-size:
+          14px;","textFormat":0}],"direction":null,"format":"","indent":0,"type":"root","version":1}}'
+        theme: violet
+        title: ''
+        type: ''
+        width: 709
+      height: 284
+      id: '1783587943108'
+      position:
+        x: 407
+        y: 746.2945550038745
+      positionAbsolute:
+        x: 407
+        y: 746.2945550038745
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 709
+      zIndex: 0
+    viewport:
+      x: 229.6248002992803
+      y: 216.46445009048531
+      zoom: 0.5080510622008857
+  rag_pipeline_variables: []

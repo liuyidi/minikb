@@ -6,6 +6,7 @@ import { useLocale } from "@/app/providers";
 import { api } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
 import { kbPath } from "@/lib/paths";
+import { StatStrip } from "@/components/content/StatStrip";
 import { PageHeader, PageShell, statusBadgeVariant } from "@minikb/ui/components/ui/page";
 import { Badge } from "@minikb/ui/components/ui/badge";
 import { Card } from "@minikb/ui/components/ui/card";
@@ -94,29 +95,7 @@ export default function HomePage() {
     <PageShell>
       <PageHeader title={t("dash.title")} subtitle={t("dash.subtitle")} />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 16,
-          marginBottom: 32,
-        }}
-      >
-        {statCards.map((stat) => (
-          <div
-            key={stat.label}
-            style={{
-              padding: 20,
-              borderRadius: "var(--mini-radius-surface)",
-              border: "1px solid var(--mini-color-border-soft)",
-              background: "var(--mini-color-canvas)",
-            }}
-          >
-            <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em" }}>{stat.value}</div>
-            <div style={{ marginTop: 4, fontSize: 13, color: "var(--mini-color-muted)" }}>{stat.label}</div>
-          </div>
-        ))}
-      </div>
+      <StatStrip items={statCards} />
 
       <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 600 }}>{t("dash.recent")}</h2>
 

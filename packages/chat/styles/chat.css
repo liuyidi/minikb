@@ -1,0 +1,27 @@
+/*
+ * Chat-specific semantic tokens (Direction 02).
+ * Import after @minikb/ui/styles/bridge.css.
+ */
+:root {
+  --mini-chat-bubble-user-bg: var(--mini-color-surface);
+  --mini-chat-bubble-assistant-bg: var(--mini-color-canvas);
+  --mini-chat-composer-bg: var(--mini-color-canvas);
+  --mini-chat-composer-border: var(--mini-color-border-soft);
+  --mini-chat-attachment-height: 4.5rem;
+  --mini-chat-attachment-width: 7.5rem;
+}
+
+.dark,
+[data-theme="dark"] {
+  --mini-chat-bubble-user-bg: var(--mini-color-surface);
+  --mini-chat-bubble-assistant-bg: var(--mini-color-canvas);
+  --mini-chat-composer-bg: var(--mini-color-canvas);
+  --mini-chat-composer-border: var(--mini-color-border-soft);
+}
+
+@theme inline {
+  --color-chat-bubble-user: var(--mini-chat-bubble-user-bg);
+  --color-chat-bubble-assistant: var(--mini-chat-bubble-assistant-bg);
+  --color-chat-composer: var(--mini-chat-composer-bg);
+  --color-chat-composer-border: var(--mini-chat-composer-border);
+}

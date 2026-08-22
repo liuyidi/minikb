@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="MINIKB_",
-        env_file=".env",
+        env_file=(".env.models", ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -46,6 +46,17 @@ class Settings(BaseSettings):
     embedding_dim: int = 1536
     # openai | mock | auto（auto：DeepSeek 等无 embeddings 的上游走 mock）
     embedding_provider: Literal["openai", "mock", "auto"] = "auto"
+
+    # --- Platform LLM slots (see .env.models.example) ---
+    llm_default_slot: str = "openai"
+    model: str = ""  # legacy alias for openai slot model (MINIKB_MODEL)
+
+    # --- Rerank upstream ---
+    rerank_default_provider: str = "qwen"
+    rerank_default_model: str = "gte-rerank-v2"
+    cohere_api_key: str = ""
+    cohere_base_url: str = "https://api.cohere.ai"
+    cohere_rerank_model: str = "rerank-multilingual-v3.0"
 
     # --- Auth ---
     default_org_slug: str = "default"

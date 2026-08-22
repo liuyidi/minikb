@@ -7,8 +7,14 @@ import remarkGfm from "remark-gfm";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const chatDir = path.resolve(dirname, "../../chat");
+
 const config: StorybookConfig = {
-  stories: ["../stories/**/*.mdx", "../stories/**/*.stories.@(ts|tsx)"],
+  stories: [
+    "../stories/**/*.mdx",
+    "../stories/**/*.stories.@(ts|tsx)",
+    `${chatDir}/stories/**/*.stories.@(ts|tsx)`,
+  ],
   addons: [
     {
       name: "@storybook/addon-docs",
@@ -34,6 +40,7 @@ const config: StorybookConfig = {
       resolve: {
         alias: {
           "@minikb/ui": path.resolve(dirname, ".."),
+          "@minikb/chat": chatDir,
         },
       },
       // build-storybook writes here; watching it causes dev reload loops.

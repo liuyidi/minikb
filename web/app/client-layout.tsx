@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { Toaster } from "@minikb/ui/components/ui/sonner";
 import { AppShell } from "@/components/AppShell";
 import Providers from "./providers";
 
@@ -17,6 +18,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
   return (
     <Providers>
       <ShellLayout>{children}</ShellLayout>
+      <Toaster richColors closeButton position="top-center" />
     </Providers>
   );
 }

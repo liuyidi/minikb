@@ -158,12 +158,33 @@ async def hybrid_search(
     return results
 
 
+def apply_score_threshold(
+    hits: list[dict[str, Any]],
+    threshold: float,
+    *,
+    mode: str,
+) -> list[dict[str, Any]]:
+    """Drop low-scoring hits. Vector uses cosine similarity; other modes use relative cutoff."""
+    if threshold <= 0 or not hits:
+        return hits
+    if mode == "vector":
+        return [hit for hit in hits if hit.get("score", 0.0) >= threshold]
+    top_score = max(hit.get("score", 0.0) for hit in hits)
+    if top_score <= 0:
+        return hits
+    return [hit for hit in hits if hit.get("score", 0.0) >= threshold * top_score]
+
+
 async def retrieve(
     kb_id: uuid.UUID,
     query: str,
     mode: str = "vector",
     top_k: int = 8,
     filter: dict[str, Any] | None = None,
+    *,
+    score_threshold: float = 0.0,
+    vector_weight: float = 0.6,
+    keyword_weight: float = 0.4,
 ) -> tuple[list[dict[str, Any]], float]:
     """Retrieve relevant chunks for a query.
 
@@ -173,6 +194,9 @@ async def retrieve(
         mode: Search mode (vector, keyword, hybrid)
         top_k: Number of results to return
         filter: Optional metadata filter
+        score_threshold: Minimum score (0–1). Vector mode uses absolute cosine similarity.
+        vector_weight: Hybrid RRF weight for vector results.
+        keyword_weight: Hybrid RRF weight for keyword results.
 
     Returns:
         Tuple of (hits, elapsed_ms)
@@ -192,10 +216,17 @@ async def retrieve(
         hits = await keyword_search(kb_id, query, top_k=top_k)
     elif mode == "hybrid":
         hits = await hybrid_search(
-            kb_id, query, query_embedding or [], top_k=top_k
+            kb_id,
+            query,
+            query_embedding or [],
+            top_k=top_k,
+            vector_weight=vector_weight,
+            keyword_weight=keyword_weight,
         )
     else:
         raise ValueError(f"Unknown search mode: {mode}")
+
+    hits = apply_score_threshold(hits, score_threshold, mode=mode)
 
     # Apply filter if provided
     if filter:

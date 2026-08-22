@@ -1,7 +1,7 @@
 @import "./mini-brand.tokens.css";
 
 /*
- * Direction 02 → shadcn-style semantic tokens (light only).
+ * Direction 02 → shadcn-style semantic tokens.
  * Brand source remains --mini-*; components use --background / --primary / …
  */
 
@@ -38,6 +38,28 @@
   --chart-3: var(--mini-color-chart-3);
   --chart-4: var(--mini-color-chart-4);
   --chart-5: var(--mini-color-chart-5);
+}
+
+.dark {
+  --mini-color-canvas: #111111;
+  --mini-color-ink: #ededed;
+  --mini-color-ink-soft: #c4c4c4;
+  --mini-color-muted: #9a9a9a;
+  --mini-color-subtle: #737373;
+  --mini-color-surface: #1a1a1a;
+  --mini-color-surface-hover: #242424;
+  --mini-color-border: #525252;
+  --mini-color-border-soft: #2a2a2a;
+  --mini-color-focus: #818cf8;
+  --mini-color-danger: #f87171;
+  --mini-color-danger-surface: #3f1d1d;
+  --mini-color-success: #34d399;
+  --mini-color-success-surface: #14291f;
+  --mini-color-warning: #fbbf24;
+  --mini-color-warning-surface: #3a2a10;
+  --mini-color-info: #a5b4fc;
+  --mini-color-info-surface: #1e2238;
+  --primary-foreground: #111111;
 }
 
 @theme inline {

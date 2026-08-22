@@ -1,6 +1,7 @@
 """Embedding providers - generate vector embeddings for text."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
@@ -10,6 +11,11 @@ import httpx
 from minikb.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
+
+# DashScope / OpenAI-compatible providers often cap batch size; keep conservative.
+EMBEDDING_BATCH_SIZE = 32
+EMBEDDING_MAX_RETRIES = 5
+EMBEDDING_RETRY_BASE_DELAY = 0.5
 
 
 class EmbeddingProvider(ABC):
@@ -48,10 +54,38 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         return self._dimension
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        """Generate embeddings using OpenAI API."""
+        """Generate embeddings using OpenAI API with batching and retries."""
         if not texts:
             return []
 
+        embeddings: list[list[float]] = []
+        for start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+            batch = texts[start : start + EMBEDDING_BATCH_SIZE]
+            embeddings.extend(await self._embed_batch_with_retry(batch))
+        return embeddings
+
+    async def _embed_batch_with_retry(self, texts: list[str]) -> list[list[float]]:
+        last_error: Exception | None = None
+        for attempt in range(EMBEDDING_MAX_RETRIES):
+            try:
+                return await self._embed_batch(texts)
+            except (httpx.HTTPStatusError, httpx.TransportError, ValueError) as exc:
+                last_error = exc
+                if attempt >= EMBEDDING_MAX_RETRIES - 1:
+                    break
+                delay = EMBEDDING_RETRY_BASE_DELAY * (2 ** attempt)
+                logger.warning(
+                    "Embedding batch failed (attempt %s/%s), retry in %.1fs: %s",
+                    attempt + 1,
+                    EMBEDDING_MAX_RETRIES,
+                    delay,
+                    exc,
+                )
+                await asyncio.sleep(delay)
+        assert last_error is not None
+        raise last_error
+
+    async def _embed_batch(self, texts: list[str]) -> list[list[float]]:
         url = f"{self.base_url}/embeddings"
         headers = {
             "Authorization": f"Bearer {self.api_key}",

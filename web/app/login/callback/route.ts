@@ -71,8 +71,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(publicUrl(request, "/?error=userinfo"));
   }
 
-  const userinfo = (await userinfoResp.json()) as { sub?: string; id?: string };
+  const userinfo = (await userinfoResp.json()) as {
+    sub?: string;
+    id?: string;
+    name?: string;
+    email?: string;
+    nickname?: string;
+    preferred_username?: string;
+  };
   const sub = String(userinfo.sub ?? userinfo.id ?? "");
+  const name = userinfo.name?.trim() || undefined;
+  const email = userinfo.email?.trim() || undefined;
+  const nickname =
+    userinfo.nickname?.trim() || userinfo.preferred_username?.trim() || undefined;
 
   const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
   const sessionToken = await sealSession(
@@ -81,6 +92,9 @@ export async function GET(request: NextRequest) {
       refresh_token: refreshToken,
       expires_at: expiresAt,
       sub,
+      name,
+      email,
+      nickname,
     },
     sessionSecret,
   );

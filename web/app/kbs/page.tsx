@@ -1,36 +1,41 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/app/providers";
 import { CreateKbModal } from "@/components/CreateKbModal";
+import { EditKbModal } from "@/components/kb/EditKbModal";
+import { KbCard } from "@/components/kb/KbCard";
+import { KbInfoDrawer } from "@/components/kb/KbInfoDrawer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@minikb/ui/components/ui/alert-dialog";
 import { Button } from "@minikb/ui/components/ui/button";
-import { PageHeader, PageShell } from "@minikb/ui/components/ui/page";
-import { Badge } from "@minikb/ui/components/ui/badge";
-import { Card } from "@minikb/ui/components/ui/card";
+import { Input } from "@minikb/ui/components/ui/input";
 import { EmptyState } from "@minikb/ui/components/ui/empty";
 import { api } from "@/lib/api";
-import { kbPath } from "@/lib/paths";
-
-type KbItem = {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  kind?: string;
-  stats?: { documents?: number; chunks?: number };
-};
+import type { KbSummary } from "@/lib/kb";
 
 export default function KbsPage() {
   const { t } = useLocale();
-  const [items, setItems] = useState<KbItem[]>([]);
+  const [items, setItems] = useState<KbSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editKb, setEditKb] = useState<KbSummary | null>(null);
+  const [infoKbId, setInfoKbId] = useState<string | null>(null);
+  const [deleteKb, setDeleteKb] = useState<KbSummary | null>(null);
 
   const loadKbs = useCallback(async () => {
     const resp = await api("/v1/kb");
     if (!resp.ok) return;
-    const data = (await resp.json()) as { items: KbItem[] };
+    const data = (await resp.json()) as { items: KbSummary[] };
     setItems(data.items ?? []);
     setLoading(false);
   }, []);
@@ -39,52 +44,97 @@ export default function KbsPage() {
     void loadKbs();
   }, [loadKbs]);
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(
+      (kb) =>
+        kb.name.toLowerCase().includes(q) ||
+        kb.slug.toLowerCase().includes(q) ||
+        (kb.description?.toLowerCase().includes(q) ?? false),
+    );
+  }, [items, search]);
+
+  async function confirmDelete() {
+    if (!deleteKb) return;
+    const resp = await api(`/v1/kb/${deleteKb.id}`, { method: "DELETE" });
+    if (resp.ok) {
+      setDeleteKb(null);
+      await loadKbs();
+    }
+  }
+
   return (
-    <PageShell>
-      <PageHeader
-        title={t("kb.title")}
-        actions={
-          <Button type="button" onClick={() => setModalOpen(true)}>
+    <div className="mx-auto w-full max-w-7xl px-6 py-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" onClick={() => setCreateOpen(true)}>
             {t("kb.create")}
           </Button>
-        }
-      />
+          <span className="text-sm text-muted-foreground">
+            {t("kb.total", { n: items.length })}
+          </span>
+        </div>
+        <Input
+          className="w-full max-w-xs"
+          placeholder={t("kb.search")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
       {loading ? (
-        <p style={{ color: "var(--mini-color-muted)", fontSize: 14 }}>...</p>
-      ) : items.length === 0 ? (
-        <EmptyState message={t("kb.empty")} />
+        <p className="text-sm text-muted-foreground">...</p>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card"
+          message={items.length === 0 ? t("kb.empty") : t("kb.noMatch")}
+        />
       ) : (
-        items.map((kb) => (
-          <Card key={kb.id}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <span style={{ fontWeight: 600, fontSize: 15 }}>{kb.name}</span>
-              {kb.kind ? <Badge>{kb.kind}</Badge> : null}
-            </div>
-            <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--mini-color-muted)" }}>
-              {kb.slug}
-              {kb.description ? ` · ${kb.description}` : ""}
-            </p>
-            <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--mini-color-subtle)" }}>
-              {t("kb.docs")}: {kb.stats?.documents ?? 0} · {t("kb.chunks")}: {kb.stats?.chunks ?? 0}
-            </p>
-            <Link href={kbPath(kb.id)}>
-              <Button variant="secondary" type="button">
-                {t("kb.manageDocs")}
-              </Button>
-            </Link>
-          </Card>
-        ))
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((kb) => (
+            <KbCard
+              key={kb.id}
+              kb={kb}
+              onEdit={(item) => setEditKb(item)}
+              onDelete={(item) => setDeleteKb(item)}
+              onInfo={(item) => setInfoKbId(item.id)}
+            />
+          ))}
+        </div>
       )}
 
-      <CreateKbModal open={modalOpen} onClose={() => setModalOpen(false)} />
-    </PageShell>
+      <CreateKbModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <EditKbModal
+        kb={editKb}
+        open={editKb !== null}
+        onClose={() => setEditKb(null)}
+        onSaved={() => void loadKbs()}
+      />
+      <KbInfoDrawer
+        kbId={infoKbId}
+        open={infoKbId !== null}
+        onOpenChange={(open) => {
+          if (!open) setInfoKbId(null);
+        }}
+      />
+
+      <AlertDialog open={deleteKb !== null} onOpenChange={(open) => !open && setDeleteKb(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("kb.delete")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("confirm.deleteKbPerm")} {deleteKb?.name}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("btn.cancel")}</AlertDialogCancel>
+            <AlertDialogAction variant="danger" onClick={() => void confirmDelete()}>
+              {t("kb.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

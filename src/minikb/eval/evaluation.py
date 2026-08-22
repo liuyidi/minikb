@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import mapped_column
 from sqlalchemy import select
 
+from minikb.api.schemas import RerankConfig
 from minikb.db.base import Base
 from minikb.db.models import new_uuid
 
@@ -100,6 +101,7 @@ class EvalRunCreate(BaseModel):
     mode: str = Field(default="vector", pattern=r"^(vector|keyword|hybrid)$")
     top_k: int = Field(default=8, ge=1, le=50)
     include_qa: bool = False
+    rerank: RerankConfig | None = None
 
 
 class EvalRunResponse(BaseModel):
@@ -235,9 +237,10 @@ async def run_evaluation(
     mode: str = "vector",
     top_k: int = 8,
     include_qa: bool = False,
+    rerank: RerankConfig | None = None,
 ) -> EvalRun:
     """Run an evaluation against a dataset."""
-    from minikb.retrieval.search import retrieve
+    from minikb.retrieval.pipeline import retrieve_ranked
 
     # Get dataset items
     items_stmt = select(EvalItem).where(EvalItem.dataset_id == dataset_id)
@@ -251,11 +254,12 @@ async def run_evaluation(
 
     for item in items:
         start = time.time()
-        hits, _ = await retrieve(
+        hits, _ = await retrieve_ranked(
             kb_id=kb_id,
             query=item.query,
             mode=mode,
             top_k=top_k,
+            rerank=rerank,
         )
         elapsed = (time.time() - start) * 1000
 
@@ -281,8 +285,9 @@ async def run_evaluation(
                     kb_id=kb_id,
                     query=item.query,
                     kb_name="eval",
-                    top_k=5,
+                    top_k=top_k,
                     mode=mode,
+                    rerank=rerank,
                 )
                 item_result["qa_answer"] = qa_result.answer
                 item_result["qa_faithfulness"] = qa_result.faithfulness_score
@@ -300,7 +305,12 @@ async def run_evaluation(
         id=uuid.uuid4(),
         dataset_id=dataset_id,
         kb_id=kb_id,
-        params={"mode": mode, "top_k": top_k, "include_qa": include_qa},
+        params={
+            "mode": mode,
+            "top_k": top_k,
+            "include_qa": include_qa,
+            "rerank": rerank.model_dump() if rerank else None,
+        },
         metrics=metrics,
         item_results=item_results,
         status="completed",

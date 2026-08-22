@@ -97,6 +97,18 @@ class ChunkListResponse(BaseModel):
     total: int
 
 
+class ChunkCreate(BaseModel):
+    document_id: uuid.UUID
+    text: str = Field(..., min_length=1, max_length=8000)
+    title: str | None = Field(default=None, max_length=500)
+
+
+class ChunkUpdate(BaseModel):
+    document_id: uuid.UUID | None = None
+    text: str | None = Field(default=None, min_length=1, max_length=8000)
+    title: str | None = Field(default=None, max_length=500)
+
+
 # ─── Ingest Job ──────────────────────────────────────────────────────────────
 
 
@@ -161,11 +173,14 @@ class RetrieveRequest(BaseModel):
     mode: str = Field(default="vector", pattern=r"^(vector|keyword|hybrid)$")
     filter: dict[str, Any] | None = None
     rerank: RerankConfig | None = None
+    score_threshold: float = Field(default=0.0, ge=0.0, le=1.0)
+    vector_weight: float = Field(default=0.6, ge=0.0, le=1.0)
+    keyword_weight: float = Field(default=0.4, ge=0.0, le=1.0)
 
 
 class RerankConfig(BaseModel):
     enabled: bool = False
-    provider: str = Field(default="mock", pattern=r"^(mock|bm25|cohere)$")
+    provider: str = Field(default="qwen", min_length=1, max_length=64)
     top_n: int = Field(default=5, ge=1, le=50)
 
 

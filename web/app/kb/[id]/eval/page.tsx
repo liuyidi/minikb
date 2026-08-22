@@ -8,6 +8,7 @@ import { Badge } from "@minikb/ui/components/ui/badge";
 import { Card } from "@minikb/ui/components/ui/card";
 import { EmptyState } from "@minikb/ui/components/ui/empty";
 import { api, apiErrorMessage } from "@/lib/api";
+import { loadRetrievalPreset } from "@/lib/qa-config";
 
 type Dataset = {
   id: string;
@@ -59,10 +60,16 @@ export default function EvalPage({ params }: { params: Promise<{ id: string }> }
 
   async function runEval(dsId: string) {
     if (!window.confirm(t("confirm.eval"))) return;
+    const preset = loadRetrievalPreset(kbId);
     const resp = await api(`/v1/kb/${kbId}/eval/runs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dataset_id: dsId, mode: "vector", top_k: 10 }),
+      body: JSON.stringify({
+        dataset_id: dsId,
+        mode: preset.mode,
+        top_k: preset.top_k,
+        rerank: preset.rerank.enabled ? preset.rerank : undefined,
+      }),
     });
     if (resp.ok) {
       alert(t("msg.evalDone"));

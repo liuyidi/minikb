@@ -227,6 +227,7 @@ async def create_run(
         mode=body.mode,
         top_k=body.top_k,
         include_qa=body.include_qa,
+        rerank=body.rerank,
     )
 
     await session.refresh(run)

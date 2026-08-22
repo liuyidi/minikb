@@ -13,11 +13,12 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import mapped_column
 
+from minikb.api.schemas import RerankConfig
 from minikb.config.settings import get_settings
 from minikb.db.base import Base
 from minikb.db.models import new_uuid
-from minikb.retrieval.search import retrieve
 from minikb.qa.prompts import get_default_template, render_prompt
+from minikb.retrieval.pipeline import retrieve_ranked
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,11 @@ class QARequest(BaseModel):
     max_tokens: int = Field(default=1000, ge=100, le=8000)
     stream: bool = False
     filter: dict[str, Any] | None = None
+    rerank: RerankConfig | None = None
+    query_rewrite: bool = False
+    score_threshold: float = Field(default=0.0, ge=0.0, le=1.0)
+    vector_weight: float = Field(default=0.6, ge=0.0, le=1.0)
+    keyword_weight: float = Field(default=0.4, ge=0.0, le=1.0)
 
 
 class Citation(BaseModel):
@@ -176,30 +182,48 @@ async def call_llm(
     max_tokens: int = 1000,
     stream: bool = False,
 ) -> Any:
-    """Call the LLM API.
+    """Call the LLM API (platform slot or OpenAI-compat fallback)."""
+    from minikb.config.platform_models import (
+        find_platform_model,
+        first_available_platform_runtime,
+        resolve_platform_runtime,
+        resolve_slot_runtime,
+    )
 
-    Supports OpenAI-compatible endpoints.
-    """
     settings = get_settings()
     api_key = settings.openai_api_key
     base_url = settings.openai_base_url
+    resolved_model = model
+
+    runtime = None
+    if model and find_platform_model(model):
+        runtime = resolve_platform_runtime(model)
+    elif model and model.strip():
+        resolved_model = model
+    else:
+        runtime = resolve_slot_runtime(settings.llm_default_slot)
+        if runtime is None or not runtime.available:
+            runtime = first_available_platform_runtime()
+
+    if runtime is not None and runtime.available:
+        api_key = runtime.api_key
+        base_url = runtime.api_base or base_url
+        resolved_model = runtime.model
 
     if not api_key:
-        # Return a mock response for dev mode
         return _mock_llm_response(messages)
 
-    model = model or settings.embedding_model.replace("embedding", "") or "gpt-4o-mini"
-    # Fix model name
-    if "embedding" in model:
-        model = "gpt-4o-mini"
+    model_name = resolved_model or settings.embedding_model.replace("embedding", "") or "gpt-4o-mini"
+    if "embedding" in model_name:
+        model_name = "gpt-4o-mini"
 
-    url = f"{base_url}/chat/completions"
+    url = f"{base_url.rstrip('/')}/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": model,
+        "model": model_name,
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
@@ -261,17 +285,27 @@ async def answer_question(
     temperature: float = 0.7,
     max_tokens: int = 1000,
     filter: dict[str, Any] | None = None,
+    rerank: RerankConfig | None = None,
+    query_rewrite: bool = False,
+    score_threshold: float = 0.0,
+    vector_weight: float = 0.6,
+    keyword_weight: float = 0.4,
 ) -> QAResponse:
     """Full RAG pipeline: retrieve → prompt → LLM → citations."""
     start_time = time.time()
 
     # Step 1: Retrieve relevant chunks
-    hits, _ = await retrieve(
+    hits, _ = await retrieve_ranked(
         kb_id=kb_id,
         query=query,
         mode=mode,
         top_k=top_k,
         filter=filter,
+        rerank=rerank,
+        query_rewrite=query_rewrite,
+        score_threshold=score_threshold,
+        vector_weight=vector_weight,
+        keyword_weight=keyword_weight,
     )
 
     # Step 2: Build prompt
@@ -316,6 +350,30 @@ async def answer_question(
     )
 
 
+def _citation_payload(citations: list[Citation]) -> list[dict[str, Any]]:
+    return [c.model_dump(mode="json") for c in citations]
+
+
+def _done_payload(
+    *,
+    answer: str,
+    citations: list[Citation],
+    hits: list[dict[str, Any]],
+    model: str | None,
+    elapsed_ms: float,
+) -> dict[str, Any]:
+    faithfulness = compute_faithfulness(answer, citations, hits)
+    return {
+        "event": "done",
+        "answer": answer,
+        "citations": _citation_payload(citations),
+        "model": model,
+        "elapsed_ms": elapsed_ms,
+        "faithfulness_score": faithfulness,
+        "retrieval_hits": len(hits),
+    }
+
+
 async def stream_answer(
     kb_id: uuid.UUID,
     query: str,
@@ -328,17 +386,29 @@ async def stream_answer(
     temperature: float = 0.7,
     max_tokens: int = 1000,
     filter: dict[str, Any] | None = None,
+    rerank: RerankConfig | None = None,
+    query_rewrite: bool = False,
+    score_threshold: float = 0.0,
+    vector_weight: float = 0.6,
+    keyword_weight: float = 0.4,
 ) -> AsyncGenerator[str, None]:
     """Stream RAG response as SSE events."""
     import json
 
+    start_time = time.time()
+
     # Step 1: Retrieve
-    hits, _ = await retrieve(
+    hits, _ = await retrieve_ranked(
         kb_id=kb_id,
         query=query,
         mode=mode,
         top_k=top_k,
         filter=filter,
+        rerank=rerank,
+        query_rewrite=query_rewrite,
+        score_threshold=score_threshold,
+        vector_weight=vector_weight,
+        keyword_weight=keyword_weight,
     )
 
     # Send retrieval info
@@ -365,7 +435,10 @@ async def stream_answer(
         mock_text = f"[Mock Answer] 这是开发模式下的模拟回答。查询：{query[:50]}... [1]"
         for char in mock_text:
             yield f"data: {json.dumps({'event': 'token', 'content': char})}\n\n"
-        yield f"data: {json.dumps({'event': 'done'})}\n\n"
+        citations = extract_citations(mock_text, hits)
+        yield f"data: {json.dumps({'event': 'citations', 'citations': _citation_payload(citations)})}\n\n"
+        elapsed_ms = (time.time() - start_time) * 1000
+        yield f"data: {json.dumps(_done_payload(answer=mock_text, citations=citations, hits=hits, model='mock', elapsed_ms=elapsed_ms))}\n\n"
         return
 
     model_name = model or "gpt-4o-mini"
@@ -403,7 +476,8 @@ async def stream_answer(
                     except (json.JSONDecodeError, KeyError, IndexError):
                         continue
 
-    # Send citations
+    # Send citations and final metadata
     citations = extract_citations(full_answer, hits)
-    yield f"data: {json.dumps({'event': 'citations', 'citations': [c.model_dump() for c in citations]})}\n\n"
-    yield f"data: {json.dumps({'event': 'done'})}\n\n"
+    yield f"data: {json.dumps({'event': 'citations', 'citations': _citation_payload(citations)})}\n\n"
+    elapsed_ms = (time.time() - start_time) * 1000
+    yield f"data: {json.dumps(_done_payload(answer=full_answer, citations=citations, hits=hits, model=model_name, elapsed_ms=elapsed_ms))}\n\n"

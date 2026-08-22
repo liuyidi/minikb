@@ -18,6 +18,7 @@ import {
 } from "@minikb/ui/components/ui/select";
 import { Textarea } from "@minikb/ui/components/ui/textarea";
 import { api, apiErrorMessage } from "@/lib/api";
+import { NoticeBanner } from "@/components/content/StatStrip";
 
 type DataSource = {
   id: string;
@@ -171,16 +172,16 @@ export default function SourcesPage({ params }: { params: Promise<{ id: string }
       />
 
       {syncing.length > 0 ? (
-        <Card style={{ padding: "12px 16px", fontSize: 13 }}>
+        <NoticeBanner>
           Syncing: <strong>{syncing.length}</strong> source(s) · {totalSynced} records synced
           {totalErrors > 0 ? (
-            <span style={{ marginLeft: 12, color: "var(--mini-color-danger)" }}>{totalErrors} error(s)</span>
+            <span className="ml-3 text-[var(--mini-color-danger)]">{totalErrors} error(s)</span>
           ) : null}
-        </Card>
+        </NoticeBanner>
       ) : totalSynced > 0 && items.length > 0 ? (
-        <Card style={{ padding: "12px 16px", fontSize: 13 }}>
+        <NoticeBanner>
           All idle · <strong>{totalSynced}</strong> total records synced across {items.length} source(s)
-        </Card>
+        </NoticeBanner>
       ) : null}
 
       {loading ? (

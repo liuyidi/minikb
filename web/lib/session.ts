@@ -10,6 +10,9 @@ export type SessionPayload = {
   refresh_token: string;
   expires_at: number;
   sub: string;
+  name?: string;
+  email?: string;
+  nickname?: string;
 };
 
 function secretKey(secret: string): Uint8Array {
@@ -33,6 +36,9 @@ export async function verifySession(
     const refresh_token = payload.refresh_token;
     const expires_at = payload.expires_at;
     const sub = payload.sub;
+    const name = payload.name;
+    const email = payload.email;
+    const nickname = payload.nickname;
     if (
       typeof access_token !== "string" ||
       typeof refresh_token !== "string" ||
@@ -41,7 +47,15 @@ export async function verifySession(
     ) {
       return null;
     }
-    return { access_token, refresh_token, expires_at, sub };
+    return {
+      access_token,
+      refresh_token,
+      expires_at,
+      sub,
+      name: typeof name === "string" ? name : undefined,
+      email: typeof email === "string" ? email : undefined,
+      nickname: typeof nickname === "string" ? nickname : undefined,
+    };
   } catch {
     return null;
   }

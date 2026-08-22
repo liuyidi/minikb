@@ -1,0 +1,32 @@
+{
+  "name": "@minikb/chat",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./types": "./types/index.ts",
+    "./types/*": "./types/*.ts",
+    "./components/*": "./components/*.tsx",
+    "./lib/*": "./lib/*.ts",
+    "./styles/chat.css": "./styles/chat.css"
+  },
+  "dependencies": {
+    "@minikb/ui": "file:../ui",
+    "lucide-react": "^0.511.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  }
+}

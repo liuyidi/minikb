@@ -89,7 +89,7 @@ class TestRerankerRegistry:
         assert isinstance(reranker, BM25Reranker)
 
     def test_unknown_provider(self) -> None:
-        with pytest.raises(ValueError, match="Unknown reranker"):
+        with pytest.raises(ValueError, match="Unknown or unavailable reranker"):
             get_reranker("unknown")
 
 

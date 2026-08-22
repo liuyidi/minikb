@@ -7,8 +7,6 @@ from typing import Any
 
 import httpx
 
-from minikb.config.settings import get_settings
-
 logger = logging.getLogger(__name__)
 
 
@@ -22,32 +20,22 @@ class Reranker(ABC):
         documents: list[str],
         top_n: int | None = None,
     ) -> list[dict[str, Any]]:
-        """Rerank documents for a query.
-
-        Args:
-            query: The search query
-            documents: List of document texts to rerank
-            top_n: Number of top results to return (None = all)
-
-        Returns:
-            List of dicts with 'index', 'text', 'score' keys, sorted by score desc.
-        """
         pass
 
 
-class CohereReranker(Reranker):
-    """Cohere Rerank API implementation."""
+class CompatReranker(Reranker):
+    """Cohere-compatible ``/v1/rerank`` API (DashScope compatible-mode, Jina, Cohere, …)."""
 
     def __init__(
         self,
         api_key: str,
-        model: str = "rerank-multilingual-v3.0",
-        base_url: str = "https://api.cohere.ai",
+        model: str,
+        base_url: str,
     ):
         self.api_key = api_key
         self.model = model
-        self.base_url = base_url
-        self._client = httpx.AsyncClient(timeout=30.0)
+        self.base_url = base_url.rstrip("/")
+        self._client = httpx.AsyncClient(timeout=60.0)
 
     async def rerank(
         self,
@@ -80,7 +68,7 @@ class CohereReranker(Reranker):
             results.append({
                 "index": idx,
                 "text": documents[idx],
-                "score": item["relevance_score"],
+                "score": item.get("relevance_score", item.get("score", 0.0)),
             })
 
         return results
@@ -110,11 +98,9 @@ class MockReranker(Reranker):
                 scored.append((i, 0.0))
                 continue
             overlap = len(query_words & doc_words)
-            # Simple scoring: overlap / max(query_words, doc_words)
             score = overlap / max(len(query_words | doc_words), 1)
             scored.append((i, score))
 
-        # Sort by score descending
         scored.sort(key=lambda x: x[1], reverse=True)
 
         n = top_n or len(scored)
@@ -146,13 +132,11 @@ class BM25Reranker(Reranker):
             return []
 
         query_terms = query.lower().split()
-        # Tokenize documents
         doc_tokens = [doc.lower().split() for doc in documents]
         doc_lens = [len(tokens) for tokens in doc_tokens]
         avg_dl = sum(doc_lens) / len(doc_lens) if doc_lens else 1
         n_docs = len(documents)
 
-        # Compute IDF for each query term
         idf: dict[str, float] = {}
         for term in query_terms:
             df = sum(1 for tokens in doc_tokens if term in tokens)
@@ -161,7 +145,6 @@ class BM25Reranker(Reranker):
             else:
                 idf[term] = 0.0
 
-        # Score each document
         scored: list[tuple[int, float]] = []
         for i, tokens in enumerate(doc_tokens):
             score = 0.0
@@ -194,54 +177,35 @@ class BM25Reranker(Reranker):
         return results
 
 
-# ─── Provider Registry ───────────────────────────────────────────────────────
-
-_reranker: Reranker | None = None
-
-
-def get_reranker(provider: str = "mock", **kwargs: Any) -> Reranker:
+def get_reranker(provider: str = "qwen", **kwargs: Any) -> Reranker:
     """Get a reranker instance by provider name."""
-    settings = get_settings()
+    from minikb.config.platform_models import resolve_rerank_runtime
 
-    if provider == "cohere":
-        api_key = kwargs.get("api_key") or getattr(settings, "cohere_api_key", "")
-        if not api_key:
-            logger.warning("No Cohere API key, falling back to mock reranker")
-            return MockReranker()
-        return CohereReranker(
-            api_key=api_key,
-            model=kwargs.get("model", "rerank-multilingual-v3.0"),
-        )
-    elif provider == "bm25":
+    provider = (provider or "").strip().lower()
+
+    if provider == "bm25":
         return BM25Reranker(
             k1=kwargs.get("k1", 1.5),
             b=kwargs.get("b", 0.75),
         )
-    elif provider == "mock":
+    if provider == "mock":
         return MockReranker()
-    else:
-        raise ValueError(f"Unknown reranker provider: {provider}")
+
+    runtime = resolve_rerank_runtime(provider)
+    if runtime is not None:
+        api_key, base_url, model = runtime
+        return CompatReranker(api_key=api_key, model=model, base_url=base_url)
+
+    raise ValueError(f"Unknown or unavailable reranker provider: {provider}")
 
 
 async def rerank_results(
     query: str,
     hits: list[dict[str, Any]],
-    provider: str = "mock",
+    provider: str = "qwen",
     top_n: int | None = None,
     **kwargs: Any,
 ) -> list[dict[str, Any]]:
-    """Rerank search hits using the specified provider.
-
-    Args:
-        query: Search query
-        hits: List of hit dicts with 'text' key
-        provider: Reranker provider name
-        top_n: Number of results to return
-        **kwargs: Provider-specific options
-
-    Returns:
-        Reranked hits with updated scores
-    """
     if not hits:
         return []
 
@@ -250,7 +214,6 @@ async def rerank_results(
 
     reranked = await reranker.rerank(query, documents, top_n=top_n)
 
-    # Map back to original hits with updated scores
     results = []
     for item in reranked:
         original_hit = hits[item["index"]].copy()

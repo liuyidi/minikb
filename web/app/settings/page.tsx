@@ -19,6 +19,7 @@ import { Field, FieldLabel } from "@minikb/ui/components/ui/field";
 import { api, apiErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/locale";
 import { LOCALE_ITEMS } from "@/lib/form-options";
+import { ModelStatusPanel } from "@/components/settings/ModelStatusPanel";
 
 type ApiKeyItem = {
   id: string;
@@ -75,6 +76,8 @@ export default function SystemSettingsPage() {
   return (
     <PageShell>
       <PageHeader title={t("sys.title")} />
+
+      <ModelStatusPanel />
 
       <Card className="mb-4 p-6">
         <h2 className="mb-4 text-base font-semibold">{t("sys.account")}</h2>

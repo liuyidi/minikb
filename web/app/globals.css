@@ -1,8 +1,10 @@
 @import "@minikb/ui/styles/bridge.css";
 @import "@minikb/ui/styles/base.css";
+@import "@minikb/chat/styles/chat.css";
 @import "tailwindcss";
 
 @source "../../packages/ui/**/*.{ts,tsx}";
+@source "../../packages/chat/**/*.{ts,tsx}";
 
 html,
 body {

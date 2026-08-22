@@ -9,11 +9,14 @@ export const RETRIEVAL_MODE_ITEMS = [
   { value: "hybrid", label: "hybrid" },
 ] as const;
 
-export const RERANK_PROVIDER_ITEMS = [
-  { value: "mock", label: "mock" },
-  { value: "bm25", label: "bm25" },
-  { value: "cohere", label: "cohere" },
+export const RERANK_PROVIDER_FALLBACK = [
+  { value: "qwen", label: "Qwen Rerank" },
+  { value: "bm25", label: "BM25 (local)" },
+  { value: "cohere", label: "Cohere" },
 ] as const;
+
+/** @deprecated use useRerankProviders() or RERANK_PROVIDER_FALLBACK */
+export const RERANK_PROVIDER_ITEMS = RERANK_PROVIDER_FALLBACK;
 
 export const SOURCE_KIND_ITEMS = [
   { value: "url", label: "URL" },

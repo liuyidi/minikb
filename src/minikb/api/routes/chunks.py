@@ -1,16 +1,66 @@
-"""Chunk browsing API routes."""
+"""Chunk browsing and management API routes."""
 from __future__ import annotations
 
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import delete, func, or_, select
 
 from minikb.api.deps import KbDep, SessionDep
-from minikb.api.schemas import ChunkListResponse, ChunkResponse
+from minikb.api.schemas import (
+    ChunkCreate,
+    ChunkListResponse,
+    ChunkResponse,
+    ChunkUpdate,
+)
+from minikb.chunks.service import (
+    MAX_CHUNK_TEXT_LENGTH,
+    apply_chunk_meta,
+    content_hash,
+    embed_chunk_text,
+    estimate_tokens,
+    next_chunk_seq,
+    update_kb_chunk_stats,
+)
 from minikb.db import Chunk, Document
 
 router = APIRouter(tags=["chunks"])
+
+
+async def _get_document(
+    session: SessionDep,
+    kb_id: uuid.UUID,
+    document_id: uuid.UUID,
+) -> Document:
+    stmt = select(Document).where(
+        Document.id == document_id,
+        Document.kb_id == kb_id,
+    )
+    doc = (await session.execute(stmt)).scalar_one_or_none()
+    if doc is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+    return doc
+
+
+async def _get_chunk(
+    session: SessionDep,
+    kb_id: uuid.UUID,
+    chunk_id: uuid.UUID,
+) -> Chunk:
+    stmt = select(Chunk).where(
+        Chunk.id == chunk_id,
+        Chunk.kb_id == kb_id,
+    )
+    chunk = (await session.execute(stmt)).scalar_one_or_none()
+    if chunk is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chunk not found",
+        )
+    return chunk
 
 
 @router.get("/v1/kb/{kb_id}/chunks", response_model=ChunkListResponse)
@@ -22,37 +72,76 @@ async def list_chunks(
     document_id: uuid.UUID | None = None,
     search: str | None = None,
 ) -> ChunkListResponse:
-    """List chunks in a knowledge base with optional filtering and search.
-
-    Supports:
-    - Filter by document_id
-    - Full-text search across chunk text
-    - Pagination
-    """
+    """List chunks in a knowledge base with optional filtering and search."""
     base_query = select(Chunk).where(Chunk.kb_id == kb.id)
 
     if document_id:
         base_query = base_query.where(Chunk.document_id == document_id)
 
     if search:
-        # Full-text search using PostgreSQL
+        from sqlalchemy import String, cast
+
         base_query = base_query.where(
-            func.to_tsvector("simple", Chunk.text).op("@@")(
-                func.plainto_tsquery("simple", search)
+            or_(
+                func.to_tsvector("simple", Chunk.text).op("@@")(
+                    func.plainto_tsquery("simple", search)
+                ),
+                cast(Chunk.id, String).ilike(f"%{search}%"),
             )
         )
 
-    # Count
     count_query = select(func.count()).select_from(base_query.subquery())
-    count_result = await session.execute(count_query)
-    total = count_result.scalar() or 0
+    total = (await session.execute(count_query)).scalar() or 0
 
-    # Fetch
     query = base_query.order_by(Chunk.seq).offset(offset).limit(limit)
-    result = await session.execute(query)
-    items = list(result.scalars().all())
+    items = list((await session.execute(query)).scalars().all())
 
     return ChunkListResponse(items=items, total=total)
+
+
+@router.post("/v1/kb/{kb_id}/chunks", response_model=ChunkResponse, status_code=status.HTTP_201_CREATED)
+async def create_chunk(
+    body: ChunkCreate,
+    session: SessionDep,
+    kb: KbDep,
+) -> ChunkResponse:
+    """Create a manual chunk and embed it."""
+    document = await _get_document(session, kb.id, body.document_id)
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Chunk text is required")
+    if len(text) > MAX_CHUNK_TEXT_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chunk text exceeds {MAX_CHUNK_TEXT_LENGTH} characters",
+        )
+
+    try:
+        embedding = await embed_chunk_text(text)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to embed chunk: {exc}",
+        ) from exc
+
+    seq = await next_chunk_seq(session, document.id)
+    chunk = Chunk(
+        id=uuid.uuid4(),
+        document_id=document.id,
+        kb_id=kb.id,
+        seq=seq,
+        text=text,
+        tokens=estimate_tokens(text),
+        meta=apply_chunk_meta({}, title=body.title),
+        embedding=embedding,
+        content_hash=content_hash(text),
+    )
+    session.add(chunk)
+    await session.flush()
+    await update_kb_chunk_stats(session, kb.id)
+    await session.commit()
+    await session.refresh(chunk)
+    return chunk
 
 
 @router.get("/v1/kb/{kb_id}/chunks/{chunk_id}", response_model=ChunkResponse)
@@ -62,18 +151,67 @@ async def get_chunk(
     kb: KbDep,
 ) -> ChunkResponse:
     """Get a specific chunk by ID."""
-    stmt = select(Chunk).where(
-        Chunk.id == chunk_id,
-        Chunk.kb_id == kb.id,
-    )
-    result = await session.execute(stmt)
-    chunk = result.scalar_one_or_none()
-    if chunk is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Chunk not found",
-        )
+    return await _get_chunk(session, kb.id, chunk_id)
+
+
+@router.patch("/v1/kb/{kb_id}/chunks/{chunk_id}", response_model=ChunkResponse)
+async def update_chunk(
+    chunk_id: uuid.UUID,
+    body: ChunkUpdate,
+    session: SessionDep,
+    kb: KbDep,
+) -> ChunkResponse:
+    """Update chunk fields; text changes trigger re-embedding."""
+    chunk = await _get_chunk(session, kb.id, chunk_id)
+
+    if body.document_id is not None and body.document_id != chunk.document_id:
+        await _get_document(session, kb.id, body.document_id)
+        chunk.document_id = body.document_id
+        chunk.seq = await next_chunk_seq(session, body.document_id)
+
+    if body.title is not None:
+        chunk.meta = apply_chunk_meta(chunk.meta or {}, title=body.title)
+
+    if body.text is not None:
+        text = body.text.strip()
+        if not text:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Chunk text is required")
+        if len(text) > MAX_CHUNK_TEXT_LENGTH:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Chunk text exceeds {MAX_CHUNK_TEXT_LENGTH} characters",
+            )
+        try:
+            embedding = await embed_chunk_text(text)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to embed chunk: {exc}",
+            ) from exc
+        chunk.text = text
+        chunk.tokens = estimate_tokens(text)
+        chunk.content_hash = content_hash(text)
+        chunk.embedding = embedding
+
+    await session.flush()
+    await update_kb_chunk_stats(session, kb.id)
+    await session.commit()
+    await session.refresh(chunk)
     return chunk
+
+
+@router.delete("/v1/kb/{kb_id}/chunks/{chunk_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_chunk(
+    chunk_id: uuid.UUID,
+    session: SessionDep,
+    kb: KbDep,
+) -> None:
+    """Delete a chunk."""
+    chunk = await _get_chunk(session, kb.id, chunk_id)
+    await session.execute(delete(Chunk).where(Chunk.id == chunk.id))
+    await session.flush()
+    await update_kb_chunk_stats(session, kb.id)
+    await session.commit()
 
 
 @router.get("/v1/kb/{kb_id}/documents/{document_id}/chunks", response_model=ChunkListResponse)
@@ -85,32 +223,18 @@ async def list_document_chunks(
     offset: int = Query(default=0, ge=0),
 ) -> ChunkListResponse:
     """List chunks for a specific document."""
-    # Verify document belongs to KB
-    doc_stmt = select(Document).where(
-        Document.id == document_id,
-        Document.kb_id == kb.id,
-    )
-    doc_result = await session.execute(doc_stmt)
-    if doc_result.scalar_one_or_none() is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found",
-        )
+    await _get_document(session, kb.id, document_id)
 
     base_query = select(Chunk).where(
         Chunk.document_id == document_id,
         Chunk.kb_id == kb.id,
     )
 
-    # Count
     count_query = select(func.count()).select_from(base_query.subquery())
-    count_result = await session.execute(count_query)
-    total = count_result.scalar() or 0
+    total = (await session.execute(count_query)).scalar() or 0
 
-    # Fetch
     query = base_query.order_by(Chunk.seq).offset(offset).limit(limit)
-    result = await session.execute(query)
-    items = list(result.scalars().all())
+    items = list((await session.execute(query)).scalars().all())
 
     return ChunkListResponse(items=items, total=total)
 
@@ -121,17 +245,11 @@ async def get_chunk_stats(
     kb: KbDep,
 ) -> dict:
     """Get chunk statistics for a knowledge base."""
-    # Total chunks
-    total_stmt = select(func.count(Chunk.id)).where(Chunk.kb_id == kb.id)
-    total_result = await session.execute(total_stmt)
-    total = total_result.scalar() or 0
+    total = (await session.execute(select(func.count(Chunk.id)).where(Chunk.kb_id == kb.id))).scalar() or 0
+    total_tokens = (
+        await session.execute(select(func.sum(Chunk.tokens)).where(Chunk.kb_id == kb.id))
+    ).scalar() or 0
 
-    # Total tokens
-    tokens_stmt = select(func.sum(Chunk.tokens)).where(Chunk.kb_id == kb.id)
-    tokens_result = await session.execute(tokens_stmt)
-    total_tokens = tokens_result.scalar() or 0
-
-    # Chunks per document
     per_doc_stmt = (
         select(Document.title, func.count(Chunk.id).label("chunk_count"))
         .join(Chunk, Chunk.document_id == Document.id)
@@ -146,10 +264,9 @@ async def get_chunk_stats(
         for row in per_doc_result
     ]
 
-    # Average chunk size
-    avg_stmt = select(func.avg(func.length(Chunk.text))).where(Chunk.kb_id == kb.id)
-    avg_result = await session.execute(avg_stmt)
-    avg_size = avg_result.scalar() or 0
+    avg_size = (
+        await session.execute(select(func.avg(func.length(Chunk.text))).where(Chunk.kb_id == kb.id))
+    ).scalar() or 0
 
     return {
         "total_chunks": total,

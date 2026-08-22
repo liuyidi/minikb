@@ -9,6 +9,7 @@ from minikb.api.routes.ingest import router as ingest_router
 from minikb.api.routes.knowledge_bases import router as kb_router
 from minikb.api.routes.members import router as members_router
 from minikb.api.routes.metrics import router as metrics_router
+from minikb.api.routes.platform import router as platform_router
 from minikb.api.routes.qa import router as qa_router
 from minikb.api.routes.retrieval import router as retrieval_router
 from minikb.api.routes.settings import router as settings_router
@@ -27,4 +28,5 @@ __all__ = [
     "settings_router",
     "metrics_router",
     "import_export_router",
+    "platform_router",
 ]

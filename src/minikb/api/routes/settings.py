@@ -25,6 +25,12 @@ class KbSettings(BaseModel):
     chunker_params: dict | None = None
     embedding_model: str | None = None
     default_prompt_template: str | None = None
+    opening_statement: str | None = Field(None, max_length=2000)
+    show_citations: bool | None = None
+    suggested_questions: list[str] | None = Field(None, max_length=10)
+    suggested_questions_after_answer: bool | None = None
+    file_upload: dict | None = None
+    content_moderation_enabled: bool | None = None
 
 
 class KbSettingsResponse(BaseModel):
@@ -77,6 +83,20 @@ async def update_settings(
             current_meta["embedding_model"] = update_data["embedding_model"]
         if "default_prompt_template" in update_data:
             current_meta["default_prompt_template"] = update_data["default_prompt_template"]
+        if "opening_statement" in update_data:
+            current_meta["opening_statement"] = update_data["opening_statement"]
+        if "show_citations" in update_data:
+            current_meta["show_citations"] = update_data["show_citations"]
+        if "suggested_questions" in update_data:
+            current_meta["suggested_questions"] = update_data["suggested_questions"]
+        if "suggested_questions_after_answer" in update_data:
+            current_meta["suggested_questions_after_answer"] = update_data[
+                "suggested_questions_after_answer"
+            ]
+        if "file_upload" in update_data:
+            current_meta["file_upload"] = update_data["file_upload"]
+        if "content_moderation_enabled" in update_data:
+            current_meta["content_moderation_enabled"] = update_data["content_moderation_enabled"]
 
         kb.meta = current_meta
 

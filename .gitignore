@@ -15,6 +15,7 @@ venv/
 .env
 .env.local
 .env.*.local
+.env.models
 *.pem
 
 # Testing / tooling

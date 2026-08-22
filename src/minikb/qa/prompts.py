@@ -73,10 +73,24 @@ class PromptTemplateResponse(BaseModel):
 # ─── Default Templates ───────────────────────────────────────────────────────
 
 
+DEFAULT_OPENING_STATEMENT_ZH = (
+    "你好！👋 你可以问我任何关于文档的问题，我会根据知识库里的内容回答。"
+)
+DEFAULT_OPENING_STATEMENT_EN = (
+    "Hi! Ask me anything about your documents — I'll answer using your knowledge base."
+)
+
 DEFAULT_QA_TEMPLATE = """\
-你是 {{ kb_name }} 的智能助手。请只基于下面提供的片段回答用户问题。
-如果片段不足以回答问题，请明确说"根据已有信息无法回答"。
-不要编造片段中没有的信息。
+你是 {{ kb_name }} 的智能助手，负责回答用户关于其自有文档的问题。
+
+请只使用下面【检索到的片段】中的内容回答用户问题。
+
+指南：
+1. 回答必须基于片段内容，不要编造片段中没有支持的事实。
+2. 如果用户提出宽泛问题（例如「这份文档主要讲什么？」或「总结一下」），请基于已有片段给出概览，不要拒绝回答。
+3. 不要要求用户粘贴文本或分享链接，因为你已经拥有文档内容。
+4. 如果片段中没有与具体问题相关的内容，请简要说明文档中未找到相关内容，并建议用户换一种问法。
+5. 使用清晰易懂的语言，并保持与用户问题相同的语言。
 
 【检索到的片段】
 {% for hit in hits %}
@@ -90,15 +104,19 @@ DEFAULT_QA_TEMPLATE = """\
 【要求】
 - 回答中引用片段时使用 [片段编号] 格式，例如 [1]、[2]
 - 在回答末尾列出所有用到的片段编号
-- 如果无法回答，直接说"根据已有信息无法回答"
 """
 
 DEFAULT_QA_TEMPLATE_EN = """\
-You are an intelligent assistant for {{ kb_name }}. Answer the user's question \
-based ONLY on the provided context snippets below.
-If the snippets are insufficient to answer the question, clearly state \
-"Based on the available information, I cannot answer this."
-Do not fabricate information not present in the snippets.
+You are an intelligent assistant for {{ kb_name }}, helping users with questions about their own documents.
+
+Answer using ONLY the context snippets below.
+
+Guidelines:
+1. Base your answer on the snippets. Do not invent facts unsupported by them.
+2. For broad questions (e.g. "What is this document about?" or "Summarize it"), give an overview from the snippets — do not refuse.
+3. Do not ask the user to paste text or share links; you already have their document content.
+4. If the snippets do not cover the specific question, say so briefly and suggest rephrasing.
+5. Use clear language and match the user's language.
 
 【Context Snippets】
 {% for hit in hits %}
@@ -112,7 +130,6 @@ Do not fabricate information not present in the snippets.
 【Requirements】
 - Cite snippets using [number] format, e.g. [1], [2]
 - List all cited snippet numbers at the end of your answer
-- If unable to answer, state "Based on the available information, I cannot answer this."
 """
 
 

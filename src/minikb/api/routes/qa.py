@@ -1,6 +1,7 @@
 """QA API routes."""
 from __future__ import annotations
 
+import json
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -58,7 +59,7 @@ async def qa_answer(
     if body.stream:
         # Streaming mode - return SSE
         return StreamingResponse(  # type: ignore[return-value]
-            _qa_stream_wrapper(kb.id, kb.name, body, prompt_template),
+            _qa_stream_wrapper(kb.id, kb.name, body, prompt_template, session),
             media_type="text/event-stream",
         )
 
@@ -75,10 +76,14 @@ async def qa_answer(
         temperature=body.temperature,
         max_tokens=body.max_tokens,
         filter=body.filter,
+        rerank=body.rerank,
+        query_rewrite=body.query_rewrite,
+        score_threshold=body.score_threshold,
+        vector_weight=body.vector_weight,
+        keyword_weight=body.keyword_weight,
     )
 
     # Log the QA interaction
-    from minikb.qa.rag import QALog
     log = QALog(
         id=uuid.uuid4(),
         kb_id=kb.id,
@@ -95,8 +100,9 @@ async def qa_answer(
     return result
 
 
-async def _qa_stream_wrapper(kb_id, kb_name, body, prompt_template):
+async def _qa_stream_wrapper(kb_id, kb_name, body, prompt_template, session):
     """Wrapper to make stream_answer work with StreamingResponse."""
+    done_payload: dict | None = None
     async for chunk in stream_answer(
         kb_id=kb_id,
         query=body.query,
@@ -109,8 +115,34 @@ async def _qa_stream_wrapper(kb_id, kb_name, body, prompt_template):
         temperature=body.temperature,
         max_tokens=body.max_tokens,
         filter=body.filter,
+        rerank=body.rerank,
+        query_rewrite=body.query_rewrite,
+        score_threshold=body.score_threshold,
+        vector_weight=body.vector_weight,
+        keyword_weight=body.keyword_weight,
     ):
         yield chunk
+        if chunk.startswith("data: "):
+            try:
+                payload = json.loads(chunk[6:].strip())
+            except json.JSONDecodeError:
+                continue
+            if payload.get("event") == "done":
+                done_payload = payload
+
+    if done_payload and done_payload.get("answer"):
+        log = QALog(
+            id=uuid.uuid4(),
+            kb_id=kb_id,
+            query=body.query,
+            answer=done_payload.get("answer"),
+            citations=done_payload.get("citations") or [],
+            model=done_payload.get("model"),
+            retrieval_hits=done_payload.get("retrieval_hits", 0),
+            elapsed_ms=int(done_payload.get("elapsed_ms") or 0),
+        )
+        session.add(log)
+        await session.flush()
 
 
 # ─── QA Logs ─────────────────────────────────────────────────────────────────
@@ -133,6 +165,35 @@ async def list_qa_logs(
     )
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+@router.delete("/v1/kb/{kb_id}/qa/logs", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_qa_logs(
+    session: SessionDep,
+    kb: KbDep,
+) -> None:
+    """Delete all QA logs for a knowledge base."""
+    await session.execute(sa_delete(QALog).where(QALog.kb_id == kb.id))
+    await session.flush()
+
+
+@router.delete("/v1/kb/{kb_id}/qa/logs/{log_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_qa_log(
+    log_id: uuid.UUID,
+    session: SessionDep,
+    kb: KbDep,
+) -> None:
+    """Delete a single QA log entry."""
+    stmt = select(QALog).where(QALog.id == log_id, QALog.kb_id == kb.id)
+    result = await session.execute(stmt)
+    log = result.scalar_one_or_none()
+    if log is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="QA log not found",
+        )
+    await session.delete(log)
+    await session.flush()
 
 
 @router.post("/v1/kb/{kb_id}/qa/logs/{log_id}/feedback", status_code=status.HTTP_204_NO_CONTENT)

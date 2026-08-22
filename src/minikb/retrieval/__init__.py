@@ -7,7 +7,7 @@ from minikb.retrieval.logs import (
 )
 from minikb.retrieval.rerank import (
     BM25Reranker,
-    CohereReranker,
+    CompatReranker,
     MockReranker,
     Reranker,
     get_reranker,
@@ -30,7 +30,7 @@ __all__ = [
     "apply_filter",
     # Rerank
     "Reranker",
-    "CohereReranker",
+    "CompatReranker",
     "MockReranker",
     "BM25Reranker",
     "get_reranker",

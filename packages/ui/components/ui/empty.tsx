@@ -9,7 +9,7 @@ function Empty({
   ...props
 }: React.ComponentProps<"div"> & { message?: string }) {
   return (
-    <Card data-slot="empty" className={cn("mb-0", className)} {...props}>
+    <Card data-slot="empty" className={cn("mb-0 border-0 bg-muted/20 shadow-none", className)} {...props}>
       {message ? (
         <p className="m-0 py-6 text-center text-sm text-muted-foreground">{message}</p>
       ) : (

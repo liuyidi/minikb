@@ -8,7 +8,7 @@ const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: repoRoot,
-  transpilePackages: ["@minikb/ui"],
+  transpilePackages: ["@minikb/ui", "@minikb/chat"],
   async rewrites() {
     return [
       {

@@ -19,6 +19,14 @@ export async function GET(request: NextRequest) {
       authenticated: true,
       accessToken: payload.access_token,
       sub: payload.sub,
+      name: payload.name,
+      email: payload.email,
+      nickname: payload.nickname,
+      displayName:
+        payload.name?.trim() ||
+        payload.nickname?.trim() ||
+        payload.email?.trim() ||
+        payload.sub,
       expiresAt: payload.expires_at,
     });
   } catch {

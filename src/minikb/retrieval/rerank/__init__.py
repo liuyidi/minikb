@@ -1,7 +1,7 @@
 """Rerank module."""
 from minikb.retrieval.rerank.rerankers import (
     BM25Reranker,
-    CohereReranker,
+    CompatReranker,
     MockReranker,
     Reranker,
     get_reranker,
@@ -10,7 +10,7 @@ from minikb.retrieval.rerank.rerankers import (
 
 __all__ = [
     "Reranker",
-    "CohereReranker",
+    "CompatReranker",
     "MockReranker",
     "BM25Reranker",
     "get_reranker",
