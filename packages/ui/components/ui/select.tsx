@@ -4,6 +4,7 @@ import * as React from "react";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { cn } from "@minikb/ui/lib/utils";
+import { fieldFocusClassName } from "@minikb/ui/lib/field-styles";
 import {
   controlHeightClassName,
   popupContentClassName,
@@ -70,7 +71,8 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={resolvedSize}
       className={cn(
-        "flex w-full cursor-pointer items-center justify-between gap-2 rounded-[var(--radius)] border border-input bg-background px-3 text-sm whitespace-nowrap outline-none transition-colors select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-placeholder:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex w-full cursor-pointer items-center justify-between gap-2 rounded-[var(--radius)] border border-input bg-background px-3 text-sm whitespace-nowrap outline-none transition-colors select-none disabled:cursor-not-allowed disabled:opacity-50 data-placeholder:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        fieldFocusClassName,
         controlHeightClassName[resolvedSize],
         className,
       )}

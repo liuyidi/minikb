@@ -63,7 +63,8 @@ export function KbInfoDrawer({ kbId, open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
-        className="fixed top-0 right-0 left-auto flex h-full max-h-screen w-full max-w-[420px] translate-x-0 translate-y-0 flex-col rounded-none border-l border-border sm:max-w-[420px]"
+        closeLabel={t("btn.close")}
+        className="fixed top-0 right-0 left-auto flex h-full max-h-screen w-full max-w-[420px] translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none rounded-l-[var(--radius-lg)] border-0 shadow-[-12px_0_48px_rgba(8,8,8,0.12)] sm:max-w-[420px]"
       >
         <DialogHeader>
           <DialogTitle>{t("kb.info.title")}</DialogTitle>

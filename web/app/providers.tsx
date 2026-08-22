@@ -18,6 +18,12 @@ import {
   setStoredTheme,
   type ThemeMode,
 } from "@/lib/theme";
+import {
+  applyThemePresetToRoot,
+  getStoredThemePreset,
+  setStoredThemePreset,
+  type ThemePreset,
+} from "@/lib/theme-presets";
 
 type LocaleContextValue = {
   locale: Locale;
@@ -28,6 +34,8 @@ type LocaleContextValue = {
 type ThemeContextValue = {
   theme: ThemeMode;
   setTheme: (mode: ThemeMode) => void;
+  themePreset: ThemePreset;
+  setThemePreset: (preset: ThemePreset) => void;
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -52,16 +60,24 @@ export function useTheme(): ThemeContextValue {
 export default function Providers({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("zh-CN");
   const [theme, setThemeState] = useState<ThemeMode>("system");
+  const [themePreset, setThemePresetState] = useState<ThemePreset>("paper");
 
   useEffect(() => {
     setLocaleState(getStoredLocale());
     setThemeState(getStoredTheme());
+    const preset = getStoredThemePreset();
+    setThemePresetState(preset);
+    applyThemePresetToRoot(preset);
     void loadSessionToken();
   }, []);
 
   useEffect(() => {
     document.documentElement.lang = locale === "en" ? "en" : "zh-CN";
   }, [locale]);
+
+  useEffect(() => {
+    applyThemePresetToRoot(themePreset);
+  }, [themePreset]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -85,6 +101,12 @@ export default function Providers({ children }: { children: ReactNode }) {
     setLocaleState(next);
   }, []);
 
+  const setThemePreset = useCallback((next: ThemePreset) => {
+    setStoredThemePreset(next);
+    setThemePresetState(next);
+    applyThemePresetToRoot(next);
+  }, []);
+
   const setTheme = useCallback((next: ThemeMode) => {
     setStoredTheme(next);
     setThemeState(next);
@@ -96,7 +118,10 @@ export default function Providers({ children }: { children: ReactNode }) {
   );
 
   const localeValue = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
-  const themeValue = useMemo(() => ({ theme, setTheme }), [theme, setTheme]);
+  const themeValue = useMemo(
+    () => ({ theme, setTheme, themePreset, setThemePreset }),
+    [theme, setTheme, themePreset, setThemePreset],
+  );
 
   return (
     <LocaleContext.Provider value={localeValue}>

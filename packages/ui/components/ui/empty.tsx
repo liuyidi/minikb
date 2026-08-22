@@ -20,8 +20,8 @@ function Empty({
 }
 
 /** @deprecated Prefer Empty — kept for page migration parity. */
-function EmptyState({ message }: { message: string }) {
-  return <Empty message={message} />;
+function EmptyState({ message, className }: { message: string; className?: string }) {
+  return <Empty message={message} className={className} />;
 }
 
 export { Empty, EmptyState };

@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Copy, FileText, Folder } from "lucide-react";
 import { useLocale } from "@/app/providers";
+import { DeleteConfirmDialog } from "@/components/content/DeleteConfirmDialog";
+import { DocumentActionButtons } from "@/components/documents/DocumentActionButtons";
 import { SearchToolbar, type SearchField } from "@/components/content/SearchToolbar";
 import { ViewModeToggle, type ViewMode } from "@/components/content/ViewModeToggle";
 import { Button } from "@minikb/ui/components/ui/button";
@@ -28,21 +29,12 @@ import {
   getFileName,
   listDirectoryEntries,
 } from "@/lib/document-tree";
-import { fetchAllDocuments } from "@/lib/documents";
+import { fetchAllDocuments, type DocListItem } from "@/lib/documents";
 import { formatBytes } from "@/lib/format";
+import { contentSurfaceClassName } from "@/lib/content-styles";
 import { kbPath } from "@/lib/paths";
 
-type DocItem = {
-  id: string;
-  title: string;
-  mime?: string;
-  size_bytes?: number;
-  status: string;
-  created_at?: string;
-  updated_at?: string;
-  error?: string;
-  meta?: Record<string, unknown>;
-};
+type DocItem = DocListItem;
 
 const PROCESSING_STATUSES = new Set(["pending", "parsing", "chunking", "embedding"]);
 
@@ -81,6 +73,8 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [deleteDoc, setDeleteDoc] = useState<DocItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadDocuments = useCallback(async () => {
     const kbResp = await api(`/v1/kb/${kbId}`);
@@ -93,7 +87,7 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
     setDocs(items);
     setLoading(false);
 
-    const processing = items.some((doc) => PROCESSING_STATUSES.has(doc.status));
+    const processing = items.some((doc) => doc.status && PROCESSING_STATUSES.has(doc.status));
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
     if (processing) {
       refreshTimer.current = setTimeout(() => void loadDocuments(), 3000);
@@ -117,10 +111,16 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
     [filteredDocs, currentDir],
   );
 
-  async function deleteDoc(docId: string) {
-    if (!kbId || !confirm(t("confirm.deleteDoc"))) return;
-    await api(`/v1/kb/${kbId}/documents/${docId}`, { method: "DELETE" });
-    void loadDocuments();
+  async function confirmDeleteDoc() {
+    if (!kbId || !deleteDoc) return;
+    setDeleting(true);
+    try {
+      await api(`/v1/kb/${kbId}/documents/${deleteDoc.id}`, { method: "DELETE" });
+      setDeleteDoc(null);
+      void loadDocuments();
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function handleFiles(files: FileList | File[]) {
@@ -175,22 +175,12 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
 
   function renderDocActions(doc: DocItem) {
     return (
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href={`${kbPath(kbId, "chunks")}?document_id=${doc.id}`}
-          className="text-xs font-medium text-[#3538cd] hover:underline"
-        >
-          {t("doc.viewChunks")}
-        </Link>
-        <Button
-          variant="danger"
-          type="button"
-          onClick={() => void deleteDoc(doc.id)}
-          style={{ fontSize: 12, height: 32, padding: "0 10px" }}
-        >
-          {t("doc.delete")}
-        </Button>
-      </div>
+      <DocumentActionButtons
+        chunksHref={`${kbPath(kbId, "chunks")}?document_id=${doc.id}`}
+        viewChunksLabel={t("doc.viewChunks")}
+        deleteLabel={t("doc.delete")}
+        onDelete={() => setDeleteDoc(doc)}
+      />
     );
   }
 
@@ -206,7 +196,7 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
       />
 
       {processing > 0 ? (
-        <Card className="border border-border bg-card" style={{ padding: "12px 16px", marginBottom: 16 }}>
+        <Card className={`${contentSurfaceClassName} mb-4 p-4`}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
             <span>
               Processing: <strong>{processing}</strong> / {total} docs
@@ -280,9 +270,9 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
       {loading ? (
         <p style={{ color: "var(--mini-color-muted)", fontSize: 14 }}>...</p>
       ) : filteredDocs.length === 0 ? (
-        <EmptyState className="border border-border bg-card" message={t("doc.empty")} />
+        <EmptyState className={contentSurfaceClassName} message={t("doc.empty")} />
       ) : viewMode === "list" ? (
-        <div className="overflow-hidden rounded-[var(--mini-radius-control)] border border-border">
+        <div className={contentSurfaceClassName}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -298,7 +288,7 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
                 <TableRow key={doc.id}>
                   <TableCell className="max-w-[320px]">{renderDocNameCell(doc)}</TableCell>
                   <TableCell>
-                    <Badge variant={statusBadgeVariant(doc.status)}>{doc.status}</Badge>
+                    <Badge variant={statusBadgeVariant(doc.status ?? "unknown")}>{doc.status ?? "—"}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {doc.mime ?? "unknown"}
@@ -315,9 +305,9 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
           </Table>
         </div>
       ) : directoryEntries.length === 0 ? (
-        <EmptyState className="border border-border bg-card" message={t("doc.empty")} />
+        <EmptyState className={contentSurfaceClassName} message={t("doc.empty")} />
       ) : (
-        <div className="overflow-hidden rounded-[var(--mini-radius-control)] border border-border">
+        <div className={contentSurfaceClassName}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -353,7 +343,7 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
                   <TableRow key={entry.doc.id}>
                     <TableCell className="max-w-[320px]">{renderDocNameCell(entry.doc)}</TableCell>
                     <TableCell>
-                      <Badge variant={statusBadgeVariant(entry.doc.status)}>{entry.doc.status}</Badge>
+                      <Badge variant={statusBadgeVariant(entry.doc.status ?? "unknown")}>{entry.doc.status ?? "—"}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {entry.doc.mime ?? "unknown"}
@@ -440,6 +430,17 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
           </div>
         ) : null}
       </Modal>
+
+      <DeleteConfirmDialog
+        open={deleteDoc !== null}
+        onOpenChange={(open) => !open && setDeleteDoc(null)}
+        title={t("doc.delete")}
+        description={t("confirm.deleteDoc")}
+        confirmLabel={t("doc.delete")}
+        cancelLabel={t("btn.cancel")}
+        confirming={deleting}
+        onConfirm={confirmDeleteDoc}
+      />
     </PageShell>
   );
 }

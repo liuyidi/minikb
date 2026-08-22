@@ -135,9 +135,9 @@ export function ChunkFormModal({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="max-w-[720px] gap-0 p-0">
-        <DialogHeader className="space-y-3 border-b border-border/40 px-6 py-4">
-          <div className="flex flex-wrap items-center gap-2">
+      <DialogContent closeLabel={labels.cancel} className="max-w-[720px] gap-0 overflow-hidden rounded-[var(--radius-lg)] p-0 sm:max-w-[720px]">
+        <DialogHeader>
+          <div className="flex flex-wrap items-center gap-2 pr-2">
             <DialogTitle>{mode === "create" ? labels.createTitle : labels.editTitle}</DialogTitle>
             {mode === "edit" && chunk ? (
               <>
@@ -155,7 +155,7 @@ export function ChunkFormModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 py-5">
+        <div className="space-y-4 px-6 py-4">
           <FormGroup label={`${labels.doc} *`}>
             {docItems.length === 0 ? (
               <p className="text-sm text-muted-foreground">{labels.docPlaceholder}</p>
@@ -210,8 +210,8 @@ export function ChunkFormModal({
           {error ? <p className="text-sm text-[var(--mini-color-danger)]">{error}</p> : null}
         </div>
 
-        <DialogFooter className="border-t border-border/40 px-6 py-4">
-          <Button variant="secondary" type="button" onClick={onClose} disabled={saving}>
+        <DialogFooter>
+          <Button variant="outline" type="button" onClick={onClose} disabled={saving}>
             {labels.cancel}
           </Button>
           <Button type="button" onClick={() => void handleSubmit()} disabled={saving}>

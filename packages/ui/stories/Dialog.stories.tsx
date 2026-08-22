@@ -32,11 +32,13 @@ export const Default: Story = {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>创建知识库</DialogTitle>
-              <DialogDescription>确认名称与 slug。</DialogDescription>
+              <DialogDescription className="pt-1">确认名称与 slug。</DialogDescription>
             </DialogHeader>
-            <div className="px-6 py-4 text-sm text-muted-foreground">正文区域在页眉与页脚之间。</div>
+            <div className="px-6 py-4 text-sm text-muted-foreground">
+              正文区域在页眉与页脚之间，无分隔横线。
+            </div>
             <DialogFooter>
-              <Button variant="secondary" type="button" onClick={() => setOpen(false)}>
+              <Button variant="outline" type="button" onClick={() => setOpen(false)}>
                 取消
               </Button>
               <Button type="button" onClick={() => setOpen(false)}>

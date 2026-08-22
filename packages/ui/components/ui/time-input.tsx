@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@minikb/ui/lib/utils";
+import { fieldFocusWithinClassName } from "@minikb/ui/lib/field-styles";
 import { arrowValue, getValidNumber, pad2, splitTime } from "@minikb/ui/lib/time-segments";
 
 interface SegmentInputProps {
@@ -134,8 +135,8 @@ export function TimeInput({
         }
       }}
       className={cn(
-        "flex h-11 items-center gap-1 rounded-[var(--radius)] border border-input bg-background px-2.5 text-sm transition-colors",
-        "focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/50",
+        "flex h-11 items-center gap-1 rounded-[var(--radius)] border border-input bg-background px-2.5 text-sm transition-colors outline-none",
+        fieldFocusWithinClassName,
         disabled && "pointer-events-none cursor-not-allowed opacity-50",
         className,
       )}

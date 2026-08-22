@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Database, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Database, Info, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useLocale } from "@/app/providers";
 import { Badge } from "@minikb/ui/components/ui/badge";
 import { Button } from "@minikb/ui/components/ui/button";
@@ -115,11 +115,13 @@ export function KbCard({ kb, onEdit, onDelete, onInfo }: Props) {
         <Button
           type="button"
           variant="ghost"
-          size="sm"
-          className="h-6 shrink-0 px-2 text-[11px]"
+          size="icon"
+          className="size-7 shrink-0 text-muted-foreground"
+          aria-label={t("kb.openInfo")}
+          title={t("kb.openInfo")}
           onClick={() => onInfo(kb)}
         >
-          {t("kb.openInfo")}
+          <Info className="size-3.5" />
         </Button>
       </div>
     </div>

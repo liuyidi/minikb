@@ -32,6 +32,7 @@ export interface AttachmentCardProps {
     remove?: string;
     openImage?: string;
     unavailable?: string;
+    close?: string;
   };
 }
 
@@ -128,7 +129,11 @@ function AttachmentCard({
         </div>
         {imageViewer ? (
           <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-            <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none sm:max-w-4xl">
+            <DialogContent
+              showCloseButton
+              closeLabel={labels?.close ?? "Close"}
+              className="max-w-3xl border-none bg-transparent p-0 shadow-none sm:max-w-4xl"
+            >
               <DialogTitle className="sr-only">{item.name}</DialogTitle>
               <img
                 src={previewUrl}

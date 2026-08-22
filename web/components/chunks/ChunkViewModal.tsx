@@ -1,11 +1,9 @@
 "use client";
 
 import { FileText } from "lucide-react";
-import { Button } from "@minikb/ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@minikb/ui/components/ui/dialog";
@@ -58,9 +56,9 @@ export function ChunkViewModal({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="max-w-[720px] gap-0 p-0">
-        <DialogHeader className="space-y-3 border-b border-border/40 px-6 py-4">
-          <div className="flex flex-wrap items-center gap-2">
+      <DialogContent closeLabel={labels.close} className="max-w-[720px] gap-0 overflow-hidden rounded-[var(--radius-lg)] p-0 sm:max-w-[720px]">
+        <DialogHeader>
+          <div className="flex flex-wrap items-center gap-2 pr-2">
             <DialogTitle>{labels.title}</DialogTitle>
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               {labels.seq} #{chunk.seq + 1}
@@ -74,7 +72,7 @@ export function ChunkViewModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 py-5">
+        <div className="space-y-4 px-6 py-4">
           <div>
             <div className="mb-1 text-xs text-muted-foreground">{labels.doc}</div>
             <div className="inline-flex items-center gap-1.5 text-sm font-medium">
@@ -103,12 +101,6 @@ export function ChunkViewModal({
             </div>
           ) : null}
         </div>
-
-        <DialogFooter className="border-t border-border/40 px-6 py-4">
-          <Button variant="secondary" type="button" onClick={onClose}>
-            {labels.close}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

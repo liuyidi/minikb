@@ -63,7 +63,7 @@ export function CreateKbModal({ open, onClose }: CreateKbModalProps) {
       closeLabel={t("btn.close")}
       footer={
         <>
-          <Button variant="secondary" type="button" onClick={onClose}>
+          <Button variant="outline" type="button" onClick={onClose}>
             {t("btn.cancel")}
           </Button>
           <Button type="button" onClick={() => void handleCreate()} disabled={submitting}>

@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Button } from "@minikb/ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -35,14 +34,11 @@ export function Modal({
         if (!next) onClose();
       }}
     >
-      <DialogContent showCloseButton={false} className="max-w-[520px] p-0">
-        <DialogHeader className="flex-row items-center justify-between space-y-0">
+      <DialogContent showCloseButton closeLabel={closeLabel} className="max-w-[480px] p-0">
+        <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <Button variant="secondary" type="button" onClick={onClose} aria-label={closeLabel}>
-            {closeLabel}
-          </Button>
         </DialogHeader>
-        <div className="px-6 py-5">{children}</div>
+        <div className="space-y-4 px-6 py-4">{children}</div>
         {footer ? <DialogFooter>{footer}</DialogFooter> : null}
       </DialogContent>
     </Dialog>

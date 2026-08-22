@@ -225,7 +225,7 @@ export default function SourcesPage({ params }: { params: Promise<{ id: string }
         closeLabel={t("btn.close")}
         footer={
           <>
-            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>
+            <Button variant="outline" type="button" onClick={() => setModalOpen(false)}>
               {t("btn.cancel")}
             </Button>
             <Button type="button" onClick={() => void createDataSource()}>

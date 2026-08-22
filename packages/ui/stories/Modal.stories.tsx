@@ -30,7 +30,7 @@ export const CreateKnowledgeBase: Story = {
           onClose={() => setOpen(false)}
           footer={
             <>
-              <Button variant="secondary" type="button" onClick={() => setOpen(false)}>
+              <Button variant="outline" type="button" onClick={() => setOpen(false)}>
                 取消
               </Button>
               <Button type="button" onClick={() => setOpen(false)}>

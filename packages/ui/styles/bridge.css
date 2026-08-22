@@ -1,4 +1,5 @@
 @import "./mini-brand.tokens.css";
+@import "./theme-presets.css";
 
 /*
  * Direction 02 → shadcn-style semantic tokens.
@@ -24,6 +25,7 @@
   --destructive-foreground: #ffffff;
   --border: var(--mini-color-border-soft);
   --input: var(--mini-color-border-soft);
+  --field-focus: var(--mini-color-field-focus);
   --ring: var(--mini-color-focus);
   --radius: var(--mini-radius-control);
   --radius-lg: var(--mini-radius-surface);
@@ -81,6 +83,7 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-field-focus: var(--field-focus);
   --color-ring: var(--ring);
   --color-success: var(--success);
   --color-warning: var(--warning);
@@ -92,7 +95,7 @@
   --color-chart-5: var(--chart-5);
   --radius-sm: calc(var(--radius) * 0.8);
   --radius-md: var(--radius);
-  --radius-lg: var(--radius-lg);
-  --radius-xl: calc(var(--radius-lg) * 1.1);
+  --radius-lg: var(--mini-radius-surface);
+  --radius-xl: calc(var(--mini-radius-surface) * 1.1);
   --font-sans: var(--mini-font-sans);
 }

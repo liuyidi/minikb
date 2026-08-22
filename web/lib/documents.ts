@@ -3,6 +3,12 @@ import { api } from "@/lib/api";
 export type DocListItem = {
   id: string;
   title: string;
+  mime?: string;
+  size_bytes?: number;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+  error?: string;
   meta?: Record<string, unknown>;
 };
 

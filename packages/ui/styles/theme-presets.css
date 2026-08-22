@@ -1,0 +1,260 @@
+/*
+ * Optional color presets — set on <html data-theme-preset="…"> or a scoped preview container.
+ * Semantic tokens inherit --mini-color-* from the nearest ancestor that defines them.
+ */
+
+/* ── Paper (current default — flat white) ───────────────────────────── */
+
+[data-theme-preset="paper"] {
+  --mini-color-canvas: #ffffff;
+  --mini-color-ink: #080808;
+  --mini-color-ink-soft: #2a2a2a;
+  --mini-color-muted: #666666;
+  --mini-color-subtle: #8a8a8a;
+  --mini-color-surface: #f5f5f5;
+  --mini-color-surface-hover: #eeeeee;
+  --mini-color-border: #a8a8a8;
+  --mini-color-border-soft: #dedede;
+  --card: var(--mini-color-canvas);
+  --border: var(--mini-color-border-soft);
+}
+
+.dark[data-theme-preset="paper"] {
+  --mini-color-canvas: #111111;
+  --mini-color-ink: #ededed;
+  --mini-color-ink-soft: #c4c4c4;
+  --mini-color-muted: #9a9a9a;
+  --mini-color-subtle: #737373;
+  --mini-color-surface: #1a1a1a;
+  --mini-color-surface-hover: #242424;
+  --mini-color-border: #525252;
+  --mini-color-border-soft: #2a2a2a;
+  --card: #161616;
+  --border: var(--mini-color-border-soft);
+}
+
+/* ── Stone — warm zinc, elevated white cards ──────────────────────── */
+
+[data-theme-preset="stone"] {
+  --mini-color-canvas: #f4f4f5;
+  --mini-color-ink: #18181b;
+  --mini-color-ink-soft: #27272a;
+  --mini-color-muted: #52525b;
+  --mini-color-subtle: #71717a;
+  --mini-color-surface: #e4e4e7;
+  --mini-color-surface-hover: #d4d4d8;
+  --mini-color-border: #a1a1aa;
+  --mini-color-border-soft: #d4d4d8;
+  --mini-color-focus: #52525b;
+  --card: #ffffff;
+  --muted: #ececee;
+  --accent: #e4e4e7;
+  --border: #d4d4d8;
+  --input: #d4d4d8;
+}
+
+.dark[data-theme-preset="stone"] {
+  --mini-color-canvas: #09090b;
+  --mini-color-ink: #fafafa;
+  --mini-color-ink-soft: #d4d4d8;
+  --mini-color-muted: #a1a1aa;
+  --mini-color-subtle: #71717a;
+  --mini-color-surface: #18181b;
+  --mini-color-surface-hover: #27272a;
+  --mini-color-border: #52525b;
+  --mini-color-border-soft: #3f3f46;
+  --mini-color-focus: #a1a1aa;
+  --card: #141416;
+  --muted: #1c1c1f;
+  --accent: #27272a;
+  --border: #3f3f46;
+  --input: #3f3f46;
+}
+
+/* ── Slate — cool product gray, blue accent ───────────────────────── */
+
+[data-theme-preset="slate"] {
+  --mini-color-canvas: #f1f5f9;
+  --mini-color-ink: #0f172a;
+  --mini-color-ink-soft: #1e293b;
+  --mini-color-muted: #475569;
+  --mini-color-subtle: #64748b;
+  --mini-color-surface: #e2e8f0;
+  --mini-color-surface-hover: #cbd5e1;
+  --mini-color-border: #64748b;
+  --mini-color-border-soft: #cbd5e1;
+  --mini-color-focus: #2563eb;
+  --card: #ffffff;
+  --muted: #e8eef4;
+  --accent: #e2e8f0;
+  --border: #cbd5e1;
+  --input: #cbd5e1;
+  --ring: #2563eb;
+}
+
+.dark[data-theme-preset="slate"] {
+  --mini-color-canvas: #0b1220;
+  --mini-color-ink: #f1f5f9;
+  --mini-color-ink-soft: #cbd5e1;
+  --mini-color-muted: #94a3b8;
+  --mini-color-subtle: #64748b;
+  --mini-color-surface: #111827;
+  --mini-color-surface-hover: #1e293b;
+  --mini-color-border: #475569;
+  --mini-color-border-soft: #334155;
+  --mini-color-focus: #60a5fa;
+  --card: #0f172a;
+  --muted: #152033;
+  --accent: #1e293b;
+  --border: #334155;
+  --input: #334155;
+  --ring: #60a5fa;
+}
+
+/* ── Ink — high contrast, crisp modules ───────────────────────────── */
+
+[data-theme-preset="ink"] {
+  --mini-color-canvas: #ececec;
+  --mini-color-ink: #0a0a0a;
+  --mini-color-ink-soft: #1a1a1a;
+  --mini-color-muted: #404040;
+  --mini-color-subtle: #5c5c5c;
+  --mini-color-surface: #dcdcdc;
+  --mini-color-surface-hover: #cfcfcf;
+  --mini-color-border: #3d3d3d;
+  --mini-color-border-soft: #b8b8b8;
+  --mini-color-focus: #0a0a0a;
+  --card: #ffffff;
+  --muted: #e2e2e2;
+  --accent: #d6d6d6;
+  --border: #b8b8b8;
+  --input: #b8b8b8;
+}
+
+.dark[data-theme-preset="ink"] {
+  --mini-color-canvas: #0a0a0a;
+  --mini-color-ink: #f5f5f5;
+  --mini-color-ink-soft: #d4d4d4;
+  --mini-color-muted: #a3a3a3;
+  --mini-color-subtle: #737373;
+  --mini-color-surface: #141414;
+  --mini-color-surface-hover: #1f1f1f;
+  --mini-color-border: #737373;
+  --mini-color-border-soft: #333333;
+  --mini-color-focus: #f5f5f5;
+  --card: #121212;
+  --muted: #1a1a1a;
+  --accent: #262626;
+  --border: #333333;
+  --input: #333333;
+}
+
+/* ── Claude — warm cream canvas, terracotta accent (claude.ai inspired) */
+
+[data-theme-preset="claude"] {
+  --mini-color-canvas: #f4f3ee;
+  --mini-color-ink: #1f1e1d;
+  --mini-color-ink-soft: #3d3929;
+  --mini-color-muted: #6b6560;
+  --mini-color-subtle: #8a847c;
+  --mini-color-surface: #ebe9e3;
+  --mini-color-surface-hover: #e0ddd5;
+  --mini-color-border: #a8a29a;
+  --mini-color-border-soft: #d9d6ce;
+  --mini-color-focus: #c96442;
+  --mini-color-info: #b45309;
+  --mini-color-info-surface: #faf3ea;
+  --card: #fffcf7;
+  --muted: #f0ede6;
+  --accent: #ebe9e3;
+  --border: #d9d6ce;
+  --input: #d9d6ce;
+  --primary: #2b2825;
+  --primary-foreground: #fffcf7;
+  --ring: #c96442;
+}
+
+.dark[data-theme-preset="claude"] {
+  --mini-color-canvas: #21201e;
+  --mini-color-ink: #f5f4ef;
+  --mini-color-ink-soft: #d8d6ce;
+  --mini-color-muted: #a8a29a;
+  --mini-color-subtle: #78716c;
+  --mini-color-surface: #2d2c29;
+  --mini-color-surface-hover: #383632;
+  --mini-color-border: #6b6560;
+  --mini-color-border-soft: #45433e;
+  --mini-color-focus: #e8956f;
+  --mini-color-info: #fbbf24;
+  --mini-color-info-surface: #3a2f1f;
+  --card: #2a2926;
+  --muted: #32312e;
+  --accent: #383632;
+  --border: #45433e;
+  --input: #45433e;
+  --primary: #f5f4ef;
+  --primary-foreground: #21201e;
+  --ring: #e8956f;
+}
+
+/* ── Feishu Aily — Feishu UD tokens (Aily workbench styles.d58e80a2.css) ─ */
+
+[data-theme-preset="feishu-aily"] {
+  /* N00 bg-body, N100 bg-base, bg-content-base, N900 text-title, N600 caption */
+  --mini-color-canvas: #f8f9fa;
+  --mini-color-ink: #1f2329;
+  --mini-color-ink-soft: #373c43;
+  --mini-color-muted: #646a73;
+  --mini-color-subtle: #8f959e;
+  --mini-color-surface: #f2f3f5;
+  --mini-color-surface-hover: #eff0f1;
+  --mini-color-border: #d0d3d6;
+  --mini-color-border-soft: #dee0e3;
+  --mini-color-focus: #1456f0;
+  --mini-color-danger: #f54a45;
+  --mini-color-danger-surface: #fef0f0;
+  --mini-color-success: #32a645;
+  --mini-color-success-surface: #e4fae1;
+  --mini-color-warning: #ff811a;
+  --mini-color-warning-surface: #fff3e5;
+  --mini-color-info: #1456f0;
+  --mini-color-info-surface: #f0f4ff;
+  --card: #ffffff;
+  --muted: #f2f3f5;
+  --accent: #eff0f1;
+  --border: #dee0e3;
+  --input: #d0d3d6;
+  --primary: #1456f0;
+  --primary-foreground: #ffffff;
+  --ring: #1456f0;
+}
+
+.dark[data-theme-preset="feishu-aily"] {
+  /* [data-theme=dark] workbench overrides */
+  --mini-color-canvas: #1a1a1a;
+  --mini-color-ink: #f5f6f7;
+  --mini-color-ink-soft: #dee0e3;
+  --mini-color-muted: #8f959e;
+  --mini-color-subtle: #646a73;
+  --mini-color-surface: #292929;
+  --mini-color-surface-hover: #373737;
+  --mini-color-border: #ffffff26;
+  --mini-color-border-soft: #ffffff26;
+  --mini-color-focus: #4c88ff;
+  --mini-color-danger: #f54a45;
+  --mini-color-danger-surface: #3f1d1d;
+  --mini-color-success: #419e34;
+  --mini-color-success-surface: #14291f;
+  --mini-color-warning: #ff811a;
+  --mini-color-warning-surface: #3a2a10;
+  --mini-color-info: #4c88ff;
+  --mini-color-info-surface: #1e2238;
+  --card: #292929;
+  --muted: #292929;
+  --accent: #373737;
+  --border: #ffffff26;
+  --input: #ffffff26;
+  --primary: #336df4;
+  --primary-foreground: #ffffff;
+  --ring: #4c88ff;
+}

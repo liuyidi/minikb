@@ -17,3 +17,8 @@
   white-space: nowrap;
   border-width: 0;
 }
+
+/* Suppress browser default focus ring; fields opt in via field-styles. */
+:focus-visible {
+  outline: none;
+}

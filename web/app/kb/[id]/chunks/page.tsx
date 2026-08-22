@@ -7,6 +7,7 @@ import { useLocale } from "@/app/providers";
 import { ChunkActionButtons } from "@/components/chunks/ChunkActionButtons";
 import { ChunkFormModal, type ChunkFormValues } from "@/components/chunks/ChunkFormModal";
 import { ChunkViewModal } from "@/components/chunks/ChunkViewModal";
+import { DeleteConfirmDialog } from "@/components/content/DeleteConfirmDialog";
 import { SearchToolbar, type SearchField } from "@/components/content/SearchToolbar";
 import { ViewModeToggle, type ViewMode } from "@/components/content/ViewModeToggle";
 import { Button } from "@minikb/ui/components/ui/button";
@@ -30,6 +31,7 @@ import {
   TableRow,
 } from "@minikb/ui/components/ui/table";
 import { api, apiErrorFromResponse } from "@/lib/api";
+import { contentCardClassName, contentSurfaceClassName } from "@/lib/content-styles";
 import { fetchAllDocuments } from "@/lib/documents";
 import { getDocumentPath, getFileName } from "@/lib/document-tree";
 
@@ -107,6 +109,8 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [activeChunk, setActiveChunk] = useState<ChunkItem | null>(null);
   const [viewChunk, setViewChunk] = useState<ChunkItem | null>(null);
+  const [deleteChunk, setDeleteChunk] = useState<ChunkItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const documentId = searchParams.get("document_id");
@@ -247,14 +251,20 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
     setFormOpen(true);
   }
 
-  async function handleDelete(chunk: ChunkItem) {
-    if (!confirm(t("chunk.deleteConfirm"))) return;
-    const resp = await api(`/v1/kb/${kbId}/chunks/${chunk.id}`, { method: "DELETE" });
-    if (!resp.ok) {
-      alert(await apiErrorFromResponse(resp));
-      return;
+  async function confirmDeleteChunk() {
+    if (!deleteChunk) return;
+    setDeleting(true);
+    try {
+      const resp = await api(`/v1/kb/${kbId}/chunks/${deleteChunk.id}`, { method: "DELETE" });
+      if (!resp.ok) {
+        alert(await apiErrorFromResponse(resp));
+        return;
+      }
+      setDeleteChunk(null);
+      void loadChunks();
+    } finally {
+      setDeleting(false);
     }
-    void loadChunks();
   }
 
   async function handleSubmit(values: ChunkFormValues) {
@@ -297,16 +307,16 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
     const doc = docMap.get(chunk.document_id);
 
     return (
-      <Card key={chunk.id} className="group relative flex h-full flex-col border border-border bg-card shadow-none">
+      <Card key={chunk.id} className={`${contentCardClassName} group relative mb-0 flex h-full flex-col`}>
         <div className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-hover:opacity-100">
           <ChunkActionButtons
-            variant="hover"
+            compact
             viewLabel={t("chunk.view")}
             editLabel={t("chunk.edit")}
             deleteLabel={t("chunk.delete")}
             onView={() => setViewChunk(chunk)}
             onEdit={() => openEdit(chunk)}
-            onDelete={() => void handleDelete(chunk)}
+            onDelete={() => setDeleteChunk(chunk)}
           />
         </div>
 
@@ -363,13 +373,8 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
           ].map((stat) => (
             <div
               key={stat.label}
-              style={{
-                flex: "1 1 120px",
-                textAlign: "center",
-                padding: 12,
-                border: "1px solid var(--mini-color-border-soft)",
-                borderRadius: "var(--mini-radius-control)",
-              }}
+              className={`${contentSurfaceClassName} flex-1 p-3 text-center`}
+              style={{ flex: "1 1 120px" }}
             >
               <div style={{ fontSize: 20, fontWeight: 600 }}>{stat.value}</div>
               <div style={{ fontSize: 12, color: "var(--mini-color-muted)", marginTop: 4 }}>{stat.label}</div>
@@ -427,18 +432,18 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
       {loading ? (
         <p style={{ color: "var(--mini-color-muted)", fontSize: 14 }}>...</p>
       ) : chunks.length === 0 ? (
-        <EmptyState className="border border-border bg-card" message={t("chunk.empty")} />
+        <EmptyState className={contentSurfaceClassName} message={t("chunk.empty")} />
       ) : viewMode === "list" ? (
-        <div className="overflow-hidden rounded-[var(--mini-radius-control)] border border-border">
-          <Table>
+        <div className={contentSurfaceClassName}>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>{t("chunk.colSeq")}</TableHead>
+                <TableHead className="w-16 shrink-0 whitespace-nowrap">{t("chunk.colSeq")}</TableHead>
                 <TableHead>{t("chunk.colId")}</TableHead>
                 <TableHead>{t("chunk.colDoc")}</TableHead>
                 <TableHead className="min-w-[280px]">{t("chunk.colContent")}</TableHead>
-                <TableHead>{t("chunk.colUpdated")}</TableHead>
-                <TableHead className="min-w-[200px] whitespace-nowrap">{t("chunk.colActions")}</TableHead>
+                <TableHead className="w-44 shrink-0 whitespace-nowrap">{t("chunk.colUpdated")}</TableHead>
+                <TableHead className="w-32 shrink-0 whitespace-nowrap">{t("chunk.colActions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -446,7 +451,9 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
                 const path = headingPath(chunk.meta);
                 return (
                   <TableRow key={chunk.id}>
-                    <TableCell className="font-medium">#{chunk.seq + 1}</TableCell>
+                    <TableCell className="w-16 shrink-0 whitespace-nowrap font-medium">
+                      #{chunk.seq + 1}
+                    </TableCell>
                     <TableCell>
                       <div className="flex max-w-[200px] items-center gap-1 font-mono text-xs">
                         <span className="truncate">{chunk.id}</span>
@@ -476,18 +483,17 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
                         {renderText(chunk.text)}
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="w-44 shrink-0 whitespace-nowrap text-muted-foreground">
                       {chunk.created_at ? new Date(chunk.created_at).toLocaleString(locale) : "—"}
                     </TableCell>
-                    <TableCell className="min-w-[200px] align-middle whitespace-nowrap">
+                    <TableCell className="w-32 shrink-0 whitespace-nowrap align-middle">
                       <ChunkActionButtons
-                        variant="inline"
                         viewLabel={t("chunk.view")}
                         editLabel={t("chunk.edit")}
                         deleteLabel={t("chunk.delete")}
                         onView={() => setViewChunk(chunk)}
                         onEdit={() => openEdit(chunk)}
-                        onDelete={() => void handleDelete(chunk)}
+                        onDelete={() => setDeleteChunk(chunk)}
                       />
                     </TableCell>
                   </TableRow>
@@ -565,6 +571,17 @@ export default function ChunksPage({ params }: { params: Promise<{ id: string }>
           updatedAt: t("chunk.updatedAt"),
         }}
         onClose={() => setViewChunk(null)}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteChunk !== null}
+        onOpenChange={(open) => !open && setDeleteChunk(null)}
+        title={t("chunk.delete")}
+        description={t("chunk.deleteConfirm")}
+        confirmLabel={t("chunk.delete")}
+        cancelLabel={t("btn.cancel")}
+        confirming={deleting}
+        onConfirm={confirmDeleteChunk}
       />
     </PageShell>
   );

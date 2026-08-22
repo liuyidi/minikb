@@ -1,4 +1,5 @@
 import { pad2 } from "./time-segments";
+import { fieldFocusClassName } from "./field-styles";
 
 export function parseTimeString(value: string | null | undefined): { hours: number; minutes: number } {
   if (!value) return { hours: 0, minutes: 0 };
@@ -53,4 +54,4 @@ export function applyTimeToDateTime(base: Date | null, time: string): Date {
 }
 
 export const pickerTriggerClassName =
-  "inline-flex h-8 w-full items-center justify-between gap-2 rounded-[var(--radius)] border border-input bg-background px-3 text-sm font-normal transition-colors hover:bg-background focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50";
+  `inline-flex h-8 w-full items-center justify-between gap-2 rounded-[var(--radius)] border border-input bg-background px-3 text-sm font-normal transition-colors hover:bg-background outline-none disabled:cursor-not-allowed disabled:opacity-50 ${fieldFocusClassName}`;

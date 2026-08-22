@@ -1,8 +1,6 @@
-export type DocLike = {
-  id: string;
-  title: string;
-  meta?: Record<string, unknown>;
-};
+import type { DocListItem } from "./documents";
+
+export type DocLike = DocListItem;
 
 export type DirectoryEntry =
   | { kind: "folder"; name: string }
